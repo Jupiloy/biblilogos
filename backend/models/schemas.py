@@ -23,3 +23,30 @@ class RespuestaRecomendacion(BaseModel):
     publicacion: RespuestaPublicacion
     puntaje: float
     motivos: list[str]
+
+
+class SolicitudPublicacion(BaseModel):
+    isbn: str
+    titulo: str
+    autor: str
+    genero: str
+    paginas: int = Field(gt=0)
+    calificacion: float = Field(ge=0.0, le=5.0)
+    tipo: str = Field(pattern="^(fisico|ebook)$")
+    stock: int | None = Field(default=None, ge=0)
+    ubicacion: str | None = None
+    formato: str | None = None
+    peso_mb: float | None = Field(default=None, gt=0)
+
+
+class SolicitudActualizacionPublicacion(BaseModel):
+    isbn: str | None = None
+    titulo: str | None = None
+    autor: str | None = None
+    genero: str | None = None
+    paginas: int | None = Field(default=None, gt=0)
+    calificacion: float | None = Field(default=None, ge=0.0, le=5.0)
+    stock: int | None = Field(default=None, ge=0)
+    ubicacion: str | None = None
+    formato: str | None = None
+    peso_mb: float | None = Field(default=None, gt=0)

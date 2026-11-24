@@ -1,0 +1,4 @@
+isbn,titulo,autor,genero,paginas,calificacion,tipo,stock,ubicacion,formato,peso_mb
+978-0000000001,Prueba funcional,Lina Gomez,Programacion,320,4.8,fisico,5,Estante T-01,,
+978-0000000002,Prueba logica,Carlos Ruiz,Inteligencia,280,4.6,ebook,,,PDF,2.5
+978-0000000003,Prueba multiparadigma,Ana Torres,Sistemas,410,4.9,fisico,2,Estante T-02,,

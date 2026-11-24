@@ -58,3 +58,43 @@ localmente en `data/bibliologos.db` y se reutilizan como caché. Si Open Library
 disponible, el sistema utiliza el catálogo local de ocho publicaciones como respaldo.
 
 > Nota: En algunos sistemas Linux/macOS utiliza `python3` en lugar de `python`.
+
+## Pruebas y análisis de datos
+
+Instala las dependencias:
+
+```bash
+./.venv/bin/python -m pip install -r requirements.txt
+```
+
+Ejecuta las pruebas Python:
+
+```bash
+./.venv/bin/python -m unittest discover -s tests -v
+```
+
+Genera los reportes NumPy/Pandas:
+
+```bash
+./.venv/bin/python - <<'PY'
+from analisis_datos import cargar_catalogo, exportar_reportes
+df = cargar_catalogo("tests/fixtures/catalogo_pruebas.csv")
+print(exportar_reportes(df, "entregables/reportes"))
+PY
+```
+
+## Entregables académicos
+
+Los archivos finales se encuentran en `entregables/`:
+
+- `Informe_Tecnico_BiblioLogos.docx`: informe editable en Word.
+- `pdf/Informe_Tecnico_BiblioLogos.pdf`: informe exportado a PDF.
+- `EVIDENCIAS.md`: guía de evidencias y comandos.
+- `reportes/`: reportes CSV generados con Pandas y NumPy.
+
+Para regenerar el informe:
+
+```bash
+./.venv/bin/python scripts/generar_informe.py
+libreoffice --headless --convert-to pdf --outdir entregables/pdf entregables/Informe_Tecnico_BiblioLogos.docx
+```

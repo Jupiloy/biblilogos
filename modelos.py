@@ -250,6 +250,53 @@ class RepositorioBiblioteca:
         """Devuelve una nueva lista (copia superficial) de todas las publicaciones."""
         return list(self.catalogo_por_isbn.values())
 
+    def actualizar_publicacion(self, isbn, datos):
+        """Actualiza una publicación conservando su tipo físico o digital."""
+        isbn_normalizado = str(isbn).strip()
+        actual = self.catalogo_por_isbn.get(isbn_normalizado)
+        if actual is None:
+            raise KeyError(f"No existe una publicación con ISBN {isbn_normalizado}.")
+
+        tipo = "fisico" if hasattr(actual, "stock") else "ebook"
+        datos_actualizados = {
+            "isbn": datos.get("isbn", actual.isbn),
+            "titulo": datos.get("titulo", actual.titulo),
+            "autor": datos.get("autor", actual.autor),
+            "genero": datos.get("genero", actual.genero),
+            "paginas": datos.get("paginas", actual.paginas),
+            "calificacion": datos.get("calificacion", actual.calificacion),
+        }
+        if tipo == "fisico":
+            datos_actualizados["stock"] = datos.get("stock", actual.stock)
+            datos_actualizados["ubicacion"] = datos.get("ubicacion", actual.ubicacion)
+        else:
+            datos_actualizados["formato"] = datos.get("formato", actual.formato)
+            datos_actualizados["peso_mb"] = datos.get("peso_mb", actual.peso_mb)
+
+        actualizada = FabricaPublicaciones.crear_publicacion(tipo, **datos_actualizados)
+        nuevo_isbn = actualizada.isbn
+        if nuevo_isbn != isbn_normalizado and nuevo_isbn in self.catalogo_por_isbn:
+            raise ValueError(f"Ya existe una publicación registrada con ISBN {nuevo_isbn}.")
+
+        del self.catalogo_por_isbn[isbn_normalizado]
+        self.catalogo_por_isbn[nuevo_isbn] = actualizada
+        self.fichas_inmutables = [
+            ficha for ficha in self.fichas_inmutables if ficha[0] != isbn_normalizado
+        ]
+        self.fichas_inmutables.append(actualizada.obtener_ficha_inmutable())
+        return actualizada
+
+    def eliminar_publicacion(self, isbn):
+        """Elimina una publicación y su ficha inmutable del repositorio."""
+        isbn_normalizado = str(isbn).strip()
+        eliminada = self.catalogo_por_isbn.pop(isbn_normalizado, None)
+        if eliminada is None:
+            raise KeyError(f"No existe una publicación con ISBN {isbn_normalizado}.")
+        self.fichas_inmutables = [
+            ficha for ficha in self.fichas_inmutables if ficha[0] != isbn_normalizado
+        ]
+        return eliminada
+
     def agregar_lector(self, lector):
         """Registra un lector indexado por su código único en O(1)."""
         if lector.codigo in self.lectores_por_codigo:

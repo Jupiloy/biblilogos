@@ -3,7 +3,12 @@ import statistics
 
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.models.schemas import RespuestaPublicacion, RespuestaRecomendacion
+from backend.models.schemas import (
+    RespuestaPublicacion,
+    RespuestaRecomendacion,
+    SolicitudActualizacionPublicacion,
+    SolicitudPublicacion,
+)
 from backend.services.catalog_service import ServicioCatalogo
 from backend.services.recommendation_service import ServicioRecomendaciones
 from backend.services.open_library_service import ServicioBibliotecaAbierta
@@ -91,6 +96,37 @@ def obtener_publicacion(isbn: str):
     if publicacion is None:
         raise HTTPException(status_code=404, detail="Publicación no encontrada")
     return crear_respuesta_publicacion(publicacion)
+
+
+@router.post("/publicaciones", response_model=RespuestaPublicacion, status_code=201)
+def crear_publicacion(solicitud: SolicitudPublicacion):
+    try:
+        publicacion = servicio_catalogo.crear_publicacion(solicitud.model_dump())
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return crear_respuesta_publicacion(publicacion)
+
+
+@router.put("/publicaciones/{isbn}", response_model=RespuestaPublicacion)
+def actualizar_publicacion(isbn: str, solicitud: SolicitudActualizacionPublicacion):
+    try:
+        publicacion = servicio_catalogo.actualizar_publicacion(
+            isbn, solicitud.model_dump(exclude_unset=True)
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return crear_respuesta_publicacion(publicacion)
+
+
+@router.delete("/publicaciones/{isbn}")
+def eliminar_publicacion(isbn: str):
+    try:
+        eliminada = servicio_catalogo.eliminar_publicacion(isbn)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"eliminada": eliminada.isbn}
 
 
 @router.get(

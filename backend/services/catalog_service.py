@@ -1,5 +1,5 @@
 from main import cargar_datos_iniciales
-from modelos import RepositorioBiblioteca
+from modelos import FabricaPublicaciones, RepositorioBiblioteca
 
 
 class ServicioCatalogo:
@@ -40,3 +40,30 @@ class ServicioCatalogo:
                 for term in terminos
             )
         ]
+
+    def crear_publicacion(self, datos: dict) -> object:
+        tipo = datos["tipo"]
+        argumentos = {
+            "isbn": datos["isbn"],
+            "titulo": datos["titulo"],
+            "autor": datos["autor"],
+            "genero": datos["genero"],
+            "paginas": datos["paginas"],
+            "calificacion": datos["calificacion"],
+        }
+        if tipo == "fisico":
+            argumentos["stock"] = datos["stock"]
+            argumentos["ubicacion"] = datos["ubicacion"]
+        else:
+            argumentos["formato"] = datos["formato"]
+            argumentos["peso_mb"] = datos["peso_mb"]
+
+        publicacion = FabricaPublicaciones.crear_publicacion(tipo, **argumentos)
+        self.repositorio.agregar_publicacion(publicacion)
+        return publicacion
+
+    def actualizar_publicacion(self, isbn: str, datos: dict) -> object:
+        return self.repositorio.actualizar_publicacion(isbn, datos)
+
+    def eliminar_publicacion(self, isbn: str) -> object:
+        return self.repositorio.eliminar_publicacion(isbn)
