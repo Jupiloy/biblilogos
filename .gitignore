@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+
+# Datos locales
+data/
+*.db
+*.sqlite*
+.env
+.env.*
+
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/out-tsc/
+
+# Editor y sistema
+.vscode/
+.idea/
+*.log
+.DS_Store

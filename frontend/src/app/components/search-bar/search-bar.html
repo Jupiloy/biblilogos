@@ -1,0 +1,11 @@
+<form class="search-box" (ngSubmit)="enviar()">
+  <span class="search-icon" aria-hidden="true">⌕</span>
+  <input
+    [(ngModel)]="consulta"
+    name="consulta"
+    type="search"
+    placeholder="¿Qué quieres leer o aprender hoy?"
+    aria-label="Buscar libros, autores o temas"
+  />
+  <button type="submit" aria-label="Buscar">Buscar</button>
+</form>

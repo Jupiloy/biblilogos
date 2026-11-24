@@ -1,0 +1,39 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+  <button class="brand" type="button" aria-label="Ir al inicio">
+    <span class="brand-mark">B</span>
+    @if (!collapsed) {
+      <span class="brand-name">BiblioLogos</span>
+    }
+  </button>
+
+  @if (!collapsed) {
+    <nav class="navigation" aria-label="Navegación principal">
+      <button class="nav-item" [class.active]="active === 'buscar'" type="button" (click)="navegar('buscar')">
+        <span class="nav-icon" aria-hidden="true">⌕</span>
+        Buscar
+      </button>
+      <button class="nav-item" [class.active]="active === 'explorar'" type="button" (click)="navegar('explorar')">
+        <span class="nav-icon" aria-hidden="true">◫</span>
+        Explorar
+      </button>
+      <button class="nav-item" [class.active]="active === 'guardados'" type="button" (click)="navegar('guardados')">
+        <span class="nav-icon" aria-hidden="true">☆</span>
+        Guardados
+      </button>
+    </nav>
+  }
+
+  <button class="collapse-button" type="button" (click)="toggle()" [attr.aria-label]="collapsed ? 'Expandir menú' : 'Ocultar menú'">
+    {{ collapsed ? '›' : '‹' }}
+  </button>
+
+  <button class="profile" type="button" [attr.aria-label]="collapsed ? 'Perfil' : null">
+    <span class="avatar">LR</span>
+    @if (!collapsed) {
+      <span>
+        <strong>Lectura personal</strong>
+        <small>Mi biblioteca</small>
+      </span>
+    }
+  </button>
+</aside>

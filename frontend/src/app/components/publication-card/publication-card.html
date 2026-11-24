@@ -1,0 +1,27 @@
+<article class="card" (click)="seleccionada.emit(publicacion())">
+  <button class="cover" type="button" [attr.aria-label]="'Ver ' + publicacion().titulo">
+    @if (publicacion().portada_url) {
+      <img [src]="publicacion().portada_url" [alt]="publicacion().titulo" />
+    } @else {
+      <span class="cover-type">{{ publicacion().tipo === 'ebook' ? 'EBOOK' : 'LIBRO' }}</span>
+      <span class="cover-title">{{ publicacion().titulo }}</span>
+    }
+  </button>
+
+  <div class="details">
+    @if (motivo()) {
+      <span class="reason">{{ motivo() }}</span>
+    }
+    <h3>{{ publicacion().titulo }}</h3>
+    <p>{{ publicacion().autor }}</p>
+    @if (publicacion().descripcion) {
+      <p class="card-synopsis">{{ publicacion().descripcion }}</p>
+    } @else if (publicacion().etiquetas?.length) {
+      <p class="card-synopsis">{{ publicacion().etiquetas!.slice(0, 3).join(' · ') }}</p>
+    }
+    <footer>
+      <span>{{ publicacion().genero }}</span>
+      <strong>★ {{ publicacion().calificacion.toFixed(1) }}</strong>
+    </footer>
+  </div>
+</article>

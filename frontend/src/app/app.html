@@ -1,0 +1,179 @@
+<div class="app-shell" [class.sidebar-collapsed]="barraLateralOculta()">
+  <app-sidebar
+    (collapsedChange)="barraLateralOculta.set($event)"
+    (navigationChange)="cambiarVista($event)"
+  />
+
+  <main class="workspace">
+    <header class="topbar">
+      <span>Biblioteca abierta</span>
+      @if (estadisticas()) {
+        <span>{{ estadisticas()!.cantidad }} publicaciones · {{ estadisticas()!.calificacion_promedio }}/5</span>
+      }
+    </header>
+
+    <section class="search-section" [class.with-results]="seRealizoBusqueda()">
+      @if (!seRealizoBusqueda()) {
+        <div class="welcome">
+          <span class="eyebrow">Descubre tu próxima lectura</span>
+          <h1>¿Qué te interesa explorar?</h1>
+        </div>
+      } @else if (vista() === 'explorar') {
+        <div class="explore-heading">
+          <span class="eyebrow">Descubre por categoría</span>
+          <h1>Explorar el conocimiento</h1>
+        </div>
+      }
+      <app-search-bar (buscar)="buscar($event)" />
+    </section>
+
+    @if (vista() === 'explorar') {
+      <nav class="category-list" aria-label="Categorías para explorar">
+        @for (categoria of categorias; track categoria.nombre) {
+          <button type="button" (click)="explorar(categoria.consulta)">{{ categoria.nombre }}</button>
+        }
+      </nav>
+    }
+
+    <section class="content">
+      @if (error()) {
+        <div class="state">
+          <strong>{{ error() }}</strong>
+          <span>Comprueba que FastAPI esté disponible en el puerto 8000.</span>
+        </div>
+      } @else if (estaBuscando()) {
+        <div class="state">Buscando en el catálogo…</div>
+      } @else if (seRealizoBusqueda() && publicaciones().length === 0) {
+        <div class="state">
+          <strong>No encontramos coincidencias.</strong>
+          <span>Prueba con un autor, género o tema diferente.</span>
+        </div>
+      } @else if (vista() === 'guardados' && publicacionesGuardadas().length === 0) {
+        <div class="state">
+          <strong>Aún no tienes guardados.</strong>
+          <span>Abre una publicación y selecciona “Guardar”.</span>
+        </div>
+      } @else {
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">
+              {{ vista() === 'guardados' ? 'Tu colección' : 'Resultados' }}
+            </span>
+            <h2>
+              {{ vista() === 'guardados' ? 'Publicaciones guardadas' : 'Coincidencias del catálogo' }}
+            </h2>
+          </div>
+        </div>
+
+        <div class="publication-grid">
+          @if (vista() === 'guardados') {
+            @for (publicacion of publicacionesGuardadas(); track publicacion.isbn) {
+              <app-publication-card
+                [publicacion]="publicacion"
+                (seleccionada)="seleccionarPublicacion($event)"
+              />
+            }
+          } @else {
+            @for (publicacion of publicaciones(); track publicacion.isbn) {
+              <app-publication-card
+                [publicacion]="publicacion"
+                (seleccionada)="seleccionarPublicacion($event)"
+              />
+            }
+          }
+        </div>
+      }
+
+      @if (recomendaciones().length > 0) {
+        <div class="section-heading recommendation-heading">
+          <div>
+            <span class="eyebrow">Basado en tu selección</span>
+            <h2>También te puede interesar</h2>
+          </div>
+        </div>
+
+        <div class="publication-grid">
+          @for (recomendacion of recomendaciones(); track recomendacion.publicacion.isbn) {
+            <app-publication-card
+              [publicacion]="recomendacion.publicacion"
+              [motivo]="recomendacion.motivos.join(' · ')"
+              (seleccionada)="seleccionarPublicacion($event)"
+            />
+          }
+        </div>
+      }
+    </section>
+  </main>
+
+  @if (publicacionAbierta(); as publicacion) {
+    <div class="detail-backdrop" (click)="cerrarDetalle()">
+      <section
+        class="detail-panel"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Detalles de ' + publicacion.titulo"
+        (click)="$event.stopPropagation()"
+      >
+        <button class="detail-close" type="button" (click)="cerrarDetalle()" aria-label="Cerrar">×</button>
+
+        <div class="detail-cover">
+          @if (publicacion.portada_url) {
+            <img [src]="publicacion.portada_url" [alt]="publicacion.titulo" />
+          } @else {
+            <span>{{ publicacion.tipo === 'ebook' ? 'EBOOK' : 'LIBRO' }}</span>
+            <strong>{{ publicacion.titulo }}</strong>
+          }
+        </div>
+
+        <div class="detail-content">
+          <span class="eyebrow">{{ publicacion.genero }}</span>
+          <h2>{{ publicacion.titulo }}</h2>
+          <p class="detail-author">{{ publicacion.autor }}</p>
+          <div class="detail-meta">
+            <span>★ {{ publicacion.calificacion.toFixed(1) }}</span>
+            <span>{{ publicacion.paginas }} páginas</span>
+            <span>{{ publicacion.tipo === 'ebook' ? 'Digital' : 'Físico' }}</span>
+          </div>
+
+          @if (publicacion.descripcion) {
+            <div class="detail-synopsis">
+              <span class="eyebrow">Sinopsis</span>
+              <p>{{ publicacion.descripcion }}</p>
+            </div>
+          }
+
+          @if (publicacion.etiquetas?.length) {
+            <div class="detail-tags" aria-label="Etiquetas">
+              @for (etiqueta of publicacion.etiquetas!.slice(0, 8); track etiqueta) {
+                <span>{{ etiqueta }}</span>
+              }
+            </div>
+          }
+
+          <div class="detail-actions">
+            @if (publicacion.enlace_abierto) {
+              <a [href]="publicacion.enlace_abierto" target="_blank" rel="noopener">Abrir publicación</a>
+            }
+            @if (estaGuardada(publicacion)) {
+              <button type="button" class="secondary" (click)="quitarPublicacion(publicacion)">Quitar de guardados</button>
+            } @else {
+              <button type="button" (click)="guardarPublicacion(publicacion)">Guardar</button>
+            }
+          </div>
+
+          @if (recomendaciones().length > 0) {
+            <div class="detail-recommendations">
+              <span class="eyebrow">Te podría interesar</span>
+              @for (recomendacion of recomendaciones().slice(0, 3); track recomendacion.publicacion.isbn) {
+                <button type="button" (click)="seleccionarPublicacion(recomendacion.publicacion)">
+                  <strong>{{ recomendacion.publicacion.titulo }}</strong>
+                  <small>{{ recomendacion.motivos.join(' · ') }}</small>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
+</div>
