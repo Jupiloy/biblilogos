@@ -1,7 +1,10 @@
-"""Genera una presentación breve alineada con la rúbrica del proyecto."""
+"""Genera una presentación breve con evidencias reales de BiblioLogos."""
 
 from pathlib import Path
+import subprocess
+import sys
 
+from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
@@ -9,570 +12,344 @@ from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
 
-RAIZ = Path(__file__).resolve().parents[1]
-SALIDA = RAIZ / "entregables"
-DIAGRAMAS = SALIDA / "diagramas"
-RUTA_PRESENTACION = SALIDA / "Presentacion_BiblioLogos.pptx"
+ROOT = Path(__file__).resolve().parents[1]
+DELIVERABLES = ROOT / "entregables"
+CAPTURES = DELIVERABLES / "capturas"
+DIAGRAMS = DELIVERABLES / "diagramas"
+OUTPUT = DELIVERABLES / "Presentacion_BiblioLogos.pptx"
 
-ANCHO = 13.333
-ALTO = 7.5
-FONDO = "F4F7FB"
-AZUL = "132238"
-AZUL_CLARO = "DDE9F5"
-TURQUESA = "0D9488"
-TEXTO = "172536"
-GRIS = "5B6B7E"
-BLANCO = "FFFFFF"
-CODIGO = "101827"
-VERDE = "DCFCE7"
-AMARILLO = "FEF3C7"
-
-
-def color(hexadecimal):
-    return RGBColor.from_string(hexadecimal)
+WIDTH = 13.333
+HEIGHT = 7.5
+BG = "F4F7FB"
+NAVY = "132238"
+TEAL = "0D9488"
+PALE_BLUE = "E8F2F7"
+WHITE = "FFFFFF"
+TEXT = "172536"
+MUTED = "5B6B7E"
+DARK = "18202D"
+GREEN = "DCFCE7"
+YELLOW = "FEF3C7"
 
 
-def agregar_texto(
-    slide,
-    texto,
-    x,
-    y,
-    ancho,
-    alto,
-    tamano=18,
-    color_texto=TEXTO,
-    negrita=False,
-    fuente="Aptos",
-    alineacion=PP_ALIGN.LEFT,
-    ancla=MSO_ANCHOR.TOP,
-):
-    caja = slide.shapes.add_textbox(
-        Inches(x), Inches(y), Inches(ancho), Inches(alto)
+def rgb(value):
+    return RGBColor.from_string(value)
+
+
+def add_text(slide, value, x, y, width, height, size=17, tone=TEXT,
+             bold=False, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP):
+    box = slide.shapes.add_textbox(
+        Inches(x), Inches(y), Inches(width), Inches(height)
     )
-    marco = caja.text_frame
-    marco.clear()
-    marco.word_wrap = True
-    marco.margin_left = Inches(0.08)
-    marco.margin_right = Inches(0.08)
-    marco.margin_top = Inches(0.04)
-    marco.margin_bottom = Inches(0.04)
-    marco.vertical_anchor = ancla
-    parrafo = marco.paragraphs[0]
-    parrafo.alignment = alineacion
-    parrafo.text = texto
-    for run in parrafo.runs:
-        run.font.name = fuente
-        run.font.size = Pt(tamano)
-        run.font.bold = negrita
-        run.font.color.rgb = color(color_texto)
-    return caja
+    box.fill.background()
+    box.line.fill.background()
+    frame = box.text_frame
+    frame.clear()
+    frame.word_wrap = True
+    frame.margin_left = Inches(0.06)
+    frame.margin_right = Inches(0.06)
+    frame.margin_top = Inches(0.03)
+    frame.margin_bottom = Inches(0.03)
+    frame.vertical_anchor = anchor
+    paragraph = frame.paragraphs[0]
+    paragraph.text = value
+    paragraph.alignment = align
+    for run in paragraph.runs:
+        run.font.name = "Aptos"
+        run.font.size = Pt(size)
+        run.font.bold = bold
+        run.font.color.rgb = rgb(tone)
+    return box
 
 
-def agregar_forma(slide, tipo, x, y, ancho, alto, relleno, linea=None):
-    forma = slide.shapes.add_shape(
-        tipo, Inches(x), Inches(y), Inches(ancho), Inches(alto)
+def add_shape(slide, kind, x, y, width, height, fill):
+    result = slide.shapes.add_shape(
+        kind, Inches(x), Inches(y), Inches(width), Inches(height)
     )
-    forma.fill.solid()
-    forma.fill.fore_color.rgb = color(relleno)
-    forma.line.color.rgb = color(linea or relleno)
-    return forma
+    result.fill.solid()
+    result.fill.fore_color.rgb = rgb(fill)
+    result.line.color.rgb = rgb(fill)
+    return result
 
 
-def agregar_lista(slide, items, x, y, ancho, alto, tamano=17, color_texto=TEXTO):
-    caja = slide.shapes.add_textbox(
-        Inches(x), Inches(y), Inches(ancho), Inches(alto)
+def add_panel(slide, x, y, width, height, fill=WHITE):
+    return add_shape(
+        slide, MSO_SHAPE.ROUNDED_RECTANGLE, x, y, width, height, fill
     )
-    marco = caja.text_frame
-    marco.clear()
-    marco.word_wrap = True
-    marco.margin_left = Inches(0.05)
-    marco.margin_right = Inches(0.04)
-    for indice, item in enumerate(items):
-        parrafo = marco.paragraphs[0] if indice == 0 else marco.add_paragraph()
-        parrafo.text = item
-        parrafo.level = 0
-        parrafo.font.name = "Aptos"
-        parrafo.font.size = Pt(tamano)
-        parrafo.font.color.rgb = color(color_texto)
-        parrafo.space_after = Pt(11)
-        parrafo._p.get_or_add_pPr().insert(0, _crear_bullet())
-    return caja
 
 
-def _crear_bullet():
-    from pptx.oxml import parse_xml
-    from pptx.oxml.ns import nsdecls
+def add_bullets(slide, items, x, y, width, size=16, spacing=0.57):
+    for index, item in enumerate(items):
+        add_text(
+            slide,
+            f"•  {item}",
+            x,
+            y + index * spacing,
+            width,
+            spacing,
+            size,
+        )
 
-    return parse_xml(f'<a:buChar char="•" {nsdecls("a")}/>')
 
-
-def agregar_codigo(slide, codigo, x, y, ancho, alto, tamano=15):
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, x, y, ancho, alto, CODIGO)
-    caja = slide.shapes.add_textbox(
-        Inches(x + 0.18), Inches(y + 0.12), Inches(ancho - 0.36), Inches(alto - 0.24)
+def add_image_fit(slide, path, x, y, box_width, box_height):
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(f"Falta evidencia visual: {path}")
+    with Image.open(path) as image:
+        image_width, image_height = image.size
+    scale = min(box_width / image_width, box_height / image_height)
+    width = image_width * scale
+    height = image_height * scale
+    return slide.shapes.add_picture(
+        str(path),
+        Inches(x + (box_width - width) / 2),
+        Inches(y + (box_height - height) / 2),
+        Inches(width),
+        Inches(height),
     )
-    marco = caja.text_frame
-    marco.clear()
-    marco.word_wrap = False
-    marco.margin_left = 0
-    marco.margin_right = 0
-    marco.margin_top = 0
-    marco.margin_bottom = 0
-    for indice, linea in enumerate(codigo.strip("\n").splitlines()):
-        parrafo = marco.paragraphs[0] if indice == 0 else marco.add_paragraph()
-        parrafo.text = linea
-        parrafo.font.name = "Cascadia Code"
-        parrafo.font.size = Pt(tamano)
-        parrafo.font.color.rgb = color("D7E2F0")
-        parrafo.space_after = Pt(2)
-    return caja
 
 
-def nueva_slide(prs, seccion, titulo, duracion):
+def add_capture(slide, name, x, y, width, height):
+    return add_image_fit(slide, CAPTURES / name, x, y, width, height)
+
+
+def add_diagram(slide, name, x, y, width, height):
+    return add_image_fit(slide, DIAGRAMS / name, x, y, width, height)
+
+
+def add_footer(slide, number, minutes):
+    add_text(slide, f"Exposición · máximo 10 min · {minutes}", 0.62, 7.1,
+             10.8, 0.2, 9, MUTED)
+    add_text(slide, f"{number:02d}", 12.15, 7.08, 0.55, 0.22, 10, MUTED,
+             True, PP_ALIGN.RIGHT)
+
+
+def new_slide(prs, number, section, title, minutes):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = color(FONDO)
-    agregar_texto(slide, seccion.upper(), 0.55, 0.18, 8.5, 0.28, 10, TURQUESA, True)
-    agregar_texto(slide, titulo, 0.55, 0.48, 12.2, 0.55, 27, AZUL, True)
-    agregar_forma(slide, MSO_SHAPE.RECTANGLE, 0.55, 1.08, 0.65, 0.05, TURQUESA)
-    agregar_texto(
-        slide,
-        f"BiblioLogos  •  Exposición sugerida: {duracion}",
-        0.55,
-        7.13,
-        10.5,
-        0.2,
-        9,
-        GRIS,
-    )
-    agregar_texto(slide, f"{len(prs.slides):02d}", 12.15, 7.1, 0.6, 0.25, 10, GRIS, True, alineacion=PP_ALIGN.RIGHT)
+    slide.background.fill.fore_color.rgb = rgb(BG)
+    add_text(slide, section.upper(), 0.55, 0.16, 11.5, 0.26, 10, TEAL, True)
+    add_text(slide, title, 0.55, 0.47, 12.2, 0.58, 27, NAVY, True)
+    add_shape(slide, MSO_SHAPE.RECTANGLE, 0.58, 1.08, 0.68, 0.05, TEAL)
+    add_footer(slide, number, minutes)
     return slide
 
 
-def agregar_etiqueta(slide, texto, x, y, ancho, relleno=AZUL_CLARO, tono=AZUL):
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, x, y, ancho, 0.36, relleno)
-    agregar_texto(slide, texto, x + 0.06, y + 0.04, ancho - 0.12, 0.24, 10, tono, True, alineacion=PP_ALIGN.CENTER)
+def add_code_slide(prs, number, section, title, minutes, image, summary,
+                   source):
+    slide = new_slide(prs, number, section, title, minutes)
+    add_panel(slide, 0.68, 1.4, 8.45, 5.2, DARK)
+    add_capture(slide, image, 0.84, 1.52, 8.13, 4.95)
+    add_panel(slide, 9.42, 1.4, 3.2, 5.2, PALE_BLUE)
+    add_text(slide, "Para explicar", 9.7, 1.76, 2.65, 0.4, 17, NAVY, True)
+    add_text(slide, summary, 9.7, 2.35, 2.6, 2.9, 15, TEXT)
+    add_text(slide, source, 9.7, 5.73, 2.6, 0.6, 10, MUTED)
+    return slide
 
 
-def agregar_imagen(slide, nombre, x, y, ancho=None, alto=None):
-    ruta = DIAGRAMAS / nombre
-    if ancho and alto:
-        return slide.shapes.add_picture(
-            str(ruta), Inches(x), Inches(y), Inches(ancho), Inches(alto)
-        )
-    if ancho:
-        return slide.shapes.add_picture(str(ruta), Inches(x), Inches(y), width=Inches(ancho))
-    return slide.shapes.add_picture(str(ruta), Inches(x), Inches(y), height=Inches(alto))
-
-
-def construir_presentacion():
+def build_presentation():
+    subprocess.run(
+        [sys.executable, "-m", "scripts.generar_capturas_codigo"],
+        cwd=ROOT,
+        check=True,
+    )
     prs = Presentation()
-    prs.slide_width = Inches(ANCHO)
-    prs.slide_height = Inches(ALTO)
-    prs.core_properties.title = "BiblioLogos — Exposición del proyecto"
-    prs.core_properties.subject = "Programación funcional, lógica y multiparadigma"
+    prs.slide_width = Inches(WIDTH)
+    prs.slide_height = Inches(HEIGHT)
+    prs.core_properties.title = "BiblioLogos — Exposición de 10 minutos"
+    prs.core_properties.subject = (
+        "Presentación concisa con evidencias de aplicación y código"
+    )
     prs.core_properties.author = "Equipo BiblioLogos"
 
-    # 1. Portada
+    # 1. Portada (20 s)
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = color(AZUL)
-    agregar_forma(slide, MSO_SHAPE.RECTANGLE, 0, 0, 0.22, ALTO, TURQUESA)
-    agregar_etiqueta(slide, "PROYECTO INTEGRADOR", 0.8, 0.78, 2.45, "1D344A", "A8F0E7")
-    agregar_texto(slide, "BIBLIOLOGOS", 0.8, 1.55, 9.2, 0.8, 38, BLANCO, True)
-    agregar_texto(
+    slide.background.fill.fore_color.rgb = rgb(NAVY)
+    add_shape(slide, MSO_SHAPE.RECTANGLE, 0, 0, 0.22, HEIGHT, TEAL)
+    add_panel(slide, 0.82, 0.8, 2.65, 0.42, "1D344A")
+    add_text(slide, "PROYECTO INTEGRADOR", 0.95, 0.9, 2.4, 0.2, 10,
+             "A8F0E7", True, PP_ALIGN.CENTER)
+    add_text(slide, "BIBLIOLOGOS", 0.82, 1.65, 9.5, 0.8, 38, WHITE, True)
+    add_text(
         slide,
-        "Sistema gestor y recomendador inteligente de libros",
-        0.82,
-        2.42,
-        9.6,
-        0.68,
+        "Gestor y recomendador inteligente de libros",
+        0.84,
+        2.58,
+        10.5,
+        0.55,
         23,
         "D9E5F2",
     )
-    agregar_texto(
+    add_text(
         slide,
-        "Programación funcional · lógica simulada · POO · ciencia de datos",
-        0.82,
-        3.35,
-        10.8,
-        0.45,
+        "Funcional · lógica simulada · POO · Pandas y NumPy",
+        0.84,
+        3.42,
+        11.3,
+        0.42,
         16,
         "A8F0E7",
         True,
     )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 0.82, 4.42, 6.3, 1.25, "1D344A")
-    agregar_texto(
+    add_panel(slide, 0.82, 4.55, 7.4, 1.15, "1D344A")
+    add_text(
         slide,
         "Curso: Lenguajes de Programación — 100000SI68\n"
-        "Integrantes: [Completar nombres]   |   Docente: [Completar]",
-        1.02,
-        4.68,
-        5.9,
-        0.72,
+        "Integrantes: [Completar]   ·   Docente: [Completar]",
+        1.08,
+        4.82,
+        6.9,
+        0.64,
         14,
-        BLANCO,
+        WHITE,
     )
-    agregar_texto(slide, "Exposición — 24 minutos", 0.82, 6.62, 4.8, 0.3, 12, "D9E5F2")
+    add_text(slide, "Objetivo: 9:30 · margen: 0:30", 0.84, 6.62, 5.2,
+             0.3, 12, "D9E5F2")
 
-    # 2. Problema y objetivos
-    slide = nueva_slide(prs, "1 · Análisis", "¿Qué problema resolvemos?", "3 min")
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 0.65, 1.4, 5.85, 4.95, BLANCO)
-    agregar_texto(slide, "Necesidad", 0.9, 1.68, 4.8, 0.35, 18, AZUL, True)
-    agregar_texto(
+    # 2. Problema y diseño (1 min 10 s)
+    slide = new_slide(prs, 2, "Problema y diseño",
+                      "Un catálogo que también ayuda a decidir qué leer",
+                      "1:10")
+    add_panel(slide, 0.72, 1.42, 4.1, 5.15)
+    add_text(slide, "Necesidad", 1.02, 1.78, 3.45, 0.38, 19, NAVY, True)
+    add_text(
         slide,
-        "Organizar un catálogo bibliográfico, encontrar publicaciones y derivar recomendaciones "
-        "sin depender de búsquedas y cálculos manuales.",
-        0.9,
-        2.14,
-        5.1,
-        1.16,
-        18,
-    )
-    agregar_texto(slide, "Propuesta", 0.9, 3.55, 4.8, 0.35, 18, AZUL, True)
-    agregar_texto(
-        slide,
-        "BiblioLogos integra catálogo, lectores, reglas de recomendación, CRUD y reportes en una "
-        "aplicación con consola, escritorio y web.",
-        0.9,
-        4.0,
-        5.1,
-        1.3,
+        "Buscar, mantener y analizar publicaciones, además de recomendar "
+        "lecturas según los intereses del lector.",
+        1.02,
+        2.34,
+        3.45,
+        1.55,
         17,
     )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 6.8, 1.4, 5.85, 4.95, "E8F2F7")
-    agregar_texto(slide, "Lo que exige el curso", 7.1, 1.68, 5.2, 0.35, 18, AZUL, True)
-    agregar_lista(
+    add_text(slide, "Solución", 1.02, 4.25, 3.45, 0.38, 19, NAVY, True)
+    add_text(
         slide,
-        [
-            "Funciones, lambdas y funciones de orden superior",
-            "Hechos, reglas, unificación y resolución lógica",
-            "Estructuras, clases, objetos y herencia",
-            "NumPy, Pandas, pruebas y resultados",
-        ],
-        7.1,
-        2.18,
-        5.1,
-        3.6,
-        16,
-    )
-    agregar_texto(
-        slide,
-        "La exposición y defensa vale 2 puntos; la demostración también evidencia los criterios técnicos.",
-        7.1,
-        5.72,
-        5.1,
-        0.45,
-        12,
-        GRIS,
-    )
-
-    # 3. Arquitectura
-    slide = nueva_slide(prs, "2 · Diseño", "Una solución separada por responsabilidades", "3 min")
-    agregar_imagen(slide, "arquitectura_general.png", 0.78, 1.42, ancho=11.8)
-    agregar_texto(
-        slide,
-        "Código para citar: main.py · backend/ · motor_funcional.py · motor_logico.py · modelos.py · analisis_datos.py",
-        0.82,
-        6.28,
-        11.6,
-        0.38,
-        12,
-        GRIS,
-    )
-
-    # 4. Funcional
-    slide = nueva_slide(prs, "3 · Programación funcional", "Filtrar, transformar y acumular", "≈2.5 min dentro del bloque funcional + lógico")
-    agregar_codigo(
-        slide,
-        """# motor_funcional.py
-return list(filter(
-    lambda libro: libro.calificacion >= umbral,
-    catalogo
-))
-
-return reduce(
-    lambda total, libro: total + libro.paginas,
-    catalogo, 0
-)""",
-        0.7,
-        1.48,
-        7.1,
-        3.75,
-        16,
-    )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 8.15, 1.48, 4.5, 3.75, BLANCO)
-    agregar_texto(slide, "Temas de clase que se ven aquí", 8.45, 1.78, 3.95, 0.4, 17, AZUL, True)
-    agregar_lista(
-        slide,
-        [
-            "lambda: función anónima",
-            "filter: selección por condición",
-            "reduce: acumulación de páginas",
-            "Nueva lista: evita alterar la entrada",
-            "FOS: recibe una transformación",
-        ],
-        8.45,
-        2.32,
-        3.9,
-        2.5,
-        15,
-    )
-    agregar_imagen(slide, "flujo_funcional.png", 1.05, 5.38, ancho=7.6, alto=1.28)
-    agregar_etiqueta(slide, "Referencia: motor_funcional.py:21, 61, 73, 101", 8.4, 5.72, 4.15)
-
-    # 5. Lógica
-    slide = nueva_slide(prs, "3 · Programación lógica", "Hechos → reglas → recomendaciones", "≈2.5 min dentro del bloque funcional + lógico")
-    agregar_imagen(slide, "flujo_logico.png", 0.68, 1.45, ancho=6.1, alto=4.7)
-    agregar_codigo(
-        slide,
-        """# motor_logico.py (idea central)
-for isbn in libros_leidos:
-    autor = base.es_autor(isbn)
-    genero = base.es_genero(isbn)
-
-for libro in catalogo:
-    if existe_en_lista(libro.isbn, leidos):
-        continue
-    motivos, bono = estrategia.evaluar_candidato(...)
-    if motivos:
-        soluciones.append(...)
-
-if corte and soluciones:
-    return [soluciones[0]]""",
-        6.95,
-        1.48,
-        5.72,
-        3.9,
-        12,
-    )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 6.95, 5.58, 5.72, 0.78, AMARILLO)
-    agregar_texto(
-        slide,
-        "Precisión: es una simulación en Python. El backtracking recorre candidatos; el corte retorna una solución ya ordenada.",
-        7.14,
-        5.72,
-        5.34,
-        0.48,
-        11,
-        TEXTO,
-        True,
-    )
-    agregar_texto(
-        slide,
-        "Referencias: motor_logico.py:19, 64, 103, 202",
-        0.8,
-        6.4,
-        5.8,
-        0.28,
-        11,
-        GRIS,
-    )
-
-    # 6. POO y tipos
-    slide = nueva_slide(prs, "4 · Multiparadigma y POO", "Clases, herencia y colecciones", "≈3 min dentro del bloque multiparadigma + CRUD")
-    agregar_imagen(slide, "diagrama_clases.png", 0.62, 1.48, ancho=7.2, alto=4.95)
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 8.05, 1.48, 4.6, 4.95, BLANCO)
-    agregar_texto(slide, "Ejemplo de herencia", 8.35, 1.8, 4.0, 0.35, 17, AZUL, True)
-    agregar_codigo(
-        slide,
-        """class LibroFisico(Publicacion):
-    def mostrar_info(self):
-        base = super().mostrar_info()
-        return f'{base} | Stock: {self.stock}'""",
-        8.3,
-        2.28,
-        4.1,
-        1.62,
-        12,
-    )
-    agregar_lista(
-        slide,
-        [
-            "Lista: catálogo y lecturas",
-            "Tupla: ficha inmutable",
-            "Diccionario: índice por ISBN",
-            "Fábrica y repositorio",
-        ],
-        8.35,
-        4.18,
-        3.9,
-        1.8,
-        14,
-    )
-    agregar_texto(slide, "Referencia: modelos.py:65, 103, 123, 178, 214", 0.8, 6.55, 7.4, 0.28, 11, GRIS)
-
-    # 7. CRUD
-    slide = nueva_slide(prs, "4 · CRUD", "El catálogo también se puede mantener", "≈2 min dentro del bloque multiparadigma + CRUD")
-    agregar_imagen(slide, "flujo_crud.png", 0.65, 1.5, ancho=5.1, alto=3.45)
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 6.0, 1.5, 6.65, 3.45, BLANCO)
-    agregar_texto(slide, "Operaciones disponibles en la API", 6.3, 1.78, 5.95, 0.35, 18, AZUL, True)
-    agregar_lista(
-        slide,
-        [
-            "POST /api/publicaciones — crear",
-            "GET /api/publicaciones — buscar/listar",
-            "PUT /api/publicaciones/{isbn} — actualizar",
-            "DELETE /api/publicaciones/{isbn} — eliminar",
-        ],
-        6.35,
-        2.3,
-        5.9,
-        2.35,
-        16,
-    )
-    agregar_codigo(
-        slide,
-        """@router.put("/publicaciones/{isbn}")
-def actualizar_publicacion(isbn, solicitud):
-    publicacion = servicio_catalogo.actualizar_publicacion(
-        isbn, solicitud.model_dump(exclude_unset=True)
-    )""",
-        0.75,
-        5.2,
-        7.4,
-        1.25,
-        11,
-    )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 8.45, 5.2, 4.2, 1.25, "E8F2F7")
-    agregar_texto(
-        slide,
-        "La API valida entradas; el repositorio actualiza en memoria durante la ejecución.",
-        8.7,
-        5.43,
-        3.7,
-        0.76,
-        13,
-        TEXTO,
-    )
-    agregar_texto(slide, "Referencia: backend/api/routes.py:101–128 · modelos.py:253–299", 0.8, 6.62, 10.2, 0.25, 10, GRIS)
-
-    # 8. Ciencia de datos
-    slide = nueva_slide(prs, "5 · Ciencia de datos", "Pandas organiza; NumPy calcula", "≈1.5 min dentro del bloque de ciencia de datos + pruebas")
-    agregar_codigo(
-        slide,
-        """# analisis_datos.py
-df = pd.read_csv(ruta_csv)
-calificaciones = df["calificacion"].to_numpy(dtype=float)
-paginas = df["paginas"].to_numpy(dtype=np.int64)
-
-promedio = np.mean(calificaciones)
-mediana = np.median(calificaciones)
-total = np.sum(paginas)
-horas = np.ceil(total / 40.0)""",
-        0.7,
-        1.5,
-        6.5,
-        3.65,
-        14,
-    )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 7.55, 1.5, 5.05, 3.65, BLANCO)
-    agregar_texto(slide, "Resultado sobre CSV de prueba (3 libros)", 7.85, 1.82, 4.45, 0.5, 17, AZUL, True)
-    indicadores = [
-        ("Publicaciones", "3"),
-        ("Promedio", "4.77 / 5"),
-        ("Páginas", "1,010"),
-        ("Horas estimadas", "26"),
-    ]
-    for indice, (nombre, valor) in enumerate(indicadores):
-        fila, columna = divmod(indice, 2)
-        x = 7.85 + columna * 2.2
-        y = 2.62 + fila * 1.12
-        agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, x, y, 2.0, 0.88, AZUL_CLARO)
-        agregar_texto(slide, nombre, x + 0.12, y + 0.1, 1.75, 0.25, 10, GRIS, True)
-        agregar_texto(slide, valor, x + 0.12, y + 0.4, 1.75, 0.3, 17, AZUL, True)
-    agregar_imagen(slide, "flujo_datos.png", 0.95, 5.37, ancho=7.2, alto=1.25)
-    agregar_texto(slide, "Son indicadores del conjunto de prueba, no del catálogo completo.", 8.0, 5.68, 4.4, 0.5, 12, GRIS, True)
-    agregar_texto(slide, "Referencia: analisis_datos.py:9, 27, 44 · tests/fixtures/catalogo_pruebas.csv", 0.8, 6.68, 11.5, 0.25, 10, GRIS)
-
-    # 9. Pruebas y resultados
-    slide = nueva_slide(prs, "5 · Evidencia", "¿Cómo comprobamos que funciona?", "≈1.5 min dentro del bloque de ciencia de datos + pruebas")
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 0.7, 1.52, 5.85, 4.85, BLANCO)
-    agregar_texto(slide, "Pruebas Python: 6 aprobadas", 1.0, 1.84, 5.1, 0.4, 20, AZUL, True)
-    agregar_lista(
-        slide,
-        [
-            "CRUD y rechazo de ISBN duplicado",
-            "Pipeline y filtros funcionales",
-            "Unificación y recursividad",
-            "Inferencia de recomendaciones",
-            "Carga CSV e indicadores",
-        ],
+        "Módulos separados para modelos, procesamiento funcional, "
+        "recomendación, API e indicadores.",
         1.02,
-        2.48,
-        4.95,
-        3.1,
-        15,
+        4.82,
+        3.45,
+        1.2,
+        16,
     )
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 6.85, 1.52, 5.78, 4.85, VERDE)
-    agregar_texto(slide, "También verificado", 7.15, 1.84, 4.9, 0.4, 20, AZUL, True)
-    agregar_lista(
-        slide,
-        [
-            "Frontend Angular: 2 pruebas aprobadas",
-            "Build Angular: completado",
-            "API: health y POST/PUT/DELETE probados",
-            "Compilación de módulos Python: correcta",
-        ],
-        7.16,
-        2.5,
-        4.85,
-        2.9,
-        15,
-    )
-    agregar_codigo(
-        slide,
-        "./.venv/bin/python -m unittest discover -s tests -v",
-        1.0,
-        5.7,
-        5.15,
-        0.48,
-        10,
+    add_panel(slide, 5.05, 1.42, 7.58, 5.15, WHITE)
+    add_diagram(slide, "arquitectura_general.png", 5.2, 1.62, 7.28, 4.75)
+    add_text(slide, "Interfaz → API → lógica y modelos → análisis",
+             5.25, 6.34, 7.2, 0.24, 11, MUTED, align=PP_ALIGN.CENTER)
+
+    # 3. Aplicación (1 min)
+    slide = new_slide(prs, 3, "Demostración", "Así se ve la búsqueda en la aplicación",
+                      "1:00")
+    add_panel(slide, 0.68, 1.4, 8.45, 5.2, WHITE)
+    add_capture(slide, "busqueda_resultados.png", 0.82, 1.54, 8.17, 4.92)
+    add_panel(slide, 9.42, 1.4, 3.2, 5.2, PALE_BLUE)
+    add_text(slide, "Flujo breve", 9.7, 1.78, 2.65, 0.4, 17, NAVY, True)
+    add_bullets(slide, [
+        "Buscar un título o autor",
+        "Revisar resultados",
+        "Usar catálogo local como respaldo",
+    ], 9.7, 2.4, 2.6, 14, 0.83)
+    add_text(slide, "Captura real de la app.", 9.7, 5.8, 2.6, 0.3, 10,
+             MUTED)
+
+    # 4. Programación funcional (1 min 30 s)
+    add_code_slide(
+        prs,
+        4,
+        "Programación funcional",
+        "El pipeline filter → map → reduce",
+        "1:30",
+        "codigo_motor_funcional_101_129.png",
+        "Filtra el catálogo, transforma los datos para estimar horas y reduce "
+        "resultados para obtener totales. El catálogo original no se modifica.",
+        "motor_funcional.py:101–129",
     )
 
-    # 10. Cierre y preguntas
-    slide = nueva_slide(prs, "6 · Defensa", "Tres paradigmas, un sistema", "5 min de preguntas")
-    tarjetas = [
-        ("FUNCIONAL", "Transformar datos\nsin alterar el catálogo", "filter · map · reduce"),
-        ("LÓGICA", "Representar relaciones\ny derivar recomendaciones", "hechos · reglas · unificación"),
-        ("POO / DATOS", "Modelar el dominio\ny medir el catálogo", "clases · Pandas · NumPy"),
+    # 5. Programación lógica simulada (1 min 30 s)
+    add_code_slide(
+        prs,
+        5,
+        "Programación lógica",
+        "Recomendaciones e inferencia",
+        "1:30",
+        "codigo_motor_logico_229_256.png",
+        "La base de conocimiento aporta hechos; el motor explora candidatos, "
+        "ordena soluciones y puede aplicar un corte. Es una simulación en "
+        "Python, como permite la indicación del curso.",
+        "motor_logico.py:229–256",
+    )
+
+    # 6. POO (1 min)
+    add_code_slide(
+        prs,
+        6,
+        "POO",
+        "Herencia para publicaciones físicas y digitales",
+        "1:00",
+        "codigo_modelos_103_121.png",
+        "LibroFisico especializa la clase base: hereda atributos comunes y "
+        "añade los propios. Ebook sigue el mismo principio.",
+        "modelos.py:103–121",
+    )
+
+    # 7. CRUD/API (1 min)
+    add_code_slide(
+        prs,
+        7,
+        "CRUD y API",
+        "Las rutas conectan las solicitudes con el dominio",
+        "1:00",
+        "codigo_routes_101_129.png",
+        "POST, PUT y DELETE gestionan cambios; GET permite consultar. "
+        "FastAPI valida solicitudes y el repositorio conserva cambios "
+        "durante la ejecución.",
+        "backend/api/routes.py:101–129",
+    )
+
+    # 8. Ciencia de datos y comprobación (1 min)
+    slide = new_slide(prs, 8, "Ciencia de datos y pruebas",
+                      "Indicadores calculados desde un CSV",
+                      "1:00")
+    add_panel(slide, 0.68, 1.42, 8.45, 5.15, DARK)
+    add_capture(slide, "codigo_analisis_datos_27_43.png",
+                0.84, 1.58, 8.13, 4.8)
+    add_panel(slide, 9.42, 1.42, 3.2, 5.15, PALE_BLUE)
+    add_text(slide, "Qué se calcula", 9.7, 1.78, 2.65, 0.4, 17, NAVY, True)
+    add_bullets(slide, [
+        "Promedio y mediana",
+        "Páginas totales",
+        "Horas estimadas",
+        "Pruebas: 6 aprobadas",
+    ], 9.7, 2.4, 2.6, 14, 0.75)
+    add_text(slide, "Pandas organiza; NumPy opera sobre arreglos.",
+             9.7, 5.75, 2.6, 0.5, 11, MUTED)
+
+    # 9. Cierre y preguntas (1 min)
+    slide = new_slide(prs, 9, "Cierre y defensa",
+                      "Un proyecto, varios paradigmas",
+                      "1:00")
+    cards = [
+        ("FUNCIONAL", "Transformar colecciones"),
+        ("LÓGICA", "Inferir recomendaciones"),
+        ("POO / DATOS", "Modelar y medir"),
     ]
-    for indice, (titulo_tarjeta, detalle, conceptos) in enumerate(tarjetas):
-        x = 0.75 + indice * 4.22
-        agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, x, 1.75, 3.8, 2.3, BLANCO)
-        agregar_texto(slide, titulo_tarjeta, x + 0.22, 2.02, 3.35, 0.32, 14, TURQUESA, True)
-        agregar_texto(slide, detalle, x + 0.22, 2.52, 3.3, 0.72, 18, AZUL, True)
-        agregar_texto(slide, conceptos, x + 0.22, 3.45, 3.3, 0.3, 11, GRIS)
-    agregar_forma(slide, MSO_SHAPE.ROUNDED_RECTANGLE, 0.75, 4.52, 11.98, 1.35, AZUL)
-    agregar_texto(
-        slide,
-        "¿Qué parte del sistema quisieran que expliquemos con más detalle?",
-        1.1,
-        4.92,
-        11.3,
-        0.5,
-        24,
-        BLANCO,
-        True,
-        alineacion=PP_ALIGN.CENTER,
-    )
-    agregar_texto(
-        slide,
-        "Cierre: elegimos Python porque permite demostrar los tres enfoques en módulos separados; "
-        "la parte lógica es una simulación aceptada por las indicaciones del curso.",
-        1.1,
-        6.12,
-        11.1,
-        0.48,
-        13,
-        GRIS,
-        alineacion=PP_ALIGN.CENTER,
-    )
+    for index, (heading, detail) in enumerate(cards):
+        x = 0.82 + index * 4.18
+        add_panel(slide, x, 1.72, 3.75, 1.6, WHITE)
+        add_text(slide, heading, x + 0.22, 2.0, 3.3, 0.3, 13, TEAL, True)
+        add_text(slide, detail, x + 0.22, 2.48, 3.3, 0.42, 17, NAVY, True)
+    add_panel(slide, 0.82, 3.85, 11.7, 1.45, NAVY)
+    add_text(slide, "¿Preguntas?", 1.15, 4.27, 11.0, 0.5, 26, WHITE, True,
+             PP_ALIGN.CENTER)
+    add_text(slide, "Guarda el último minuto para preguntas y defensa.",
+             1.0, 5.8, 11.3, 0.35, 14, MUTED, align=PP_ALIGN.CENTER)
 
-    SALIDA.mkdir(parents=True, exist_ok=True)
-    prs.save(RUTA_PRESENTACION)
-    return RUTA_PRESENTACION
+    DELIVERABLES.mkdir(parents=True, exist_ok=True)
+    prs.save(OUTPUT)
+    return OUTPUT
 
 
 if __name__ == "__main__":
-    print(construir_presentacion())
+    print(build_presentation())

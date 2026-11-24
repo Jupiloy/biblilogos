@@ -89,7 +89,7 @@ Los archivos finales se encuentran en `entregables/`:
 
 - `Informe_Tecnico_BiblioLogos.docx`: informe editable en Word.
 - `pdf/Informe_Tecnico_BiblioLogos.pdf`: informe exportado a PDF.
-- `Presentacion_BiblioLogos.pptx`: exposición alineada con los tiempos sugeridos de la rúbrica.
+- `Presentacion_BiblioLogos.pptx`: presentación breve de 9 diapositivas, preparada para un máximo de 10 minutos e incluye capturas puntuales de la interfaz y del código.
 - `EVIDENCIAS.md`: guía de evidencias y comandos.
 - `reportes/`: reportes CSV generados con Pandas y NumPy.
 
