@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   EstadisticasBiblioteca,
+  DatosPublicacion,
   Publicacion,
   Recomendacion,
 } from '../models/library.models';
@@ -26,5 +27,29 @@ export class ServicioBiblioteca {
 
   obtenerEstadisticas(): Observable<EstadisticasBiblioteca> {
     return this.http.get<EstadisticasBiblioteca>(`${this.apiUrl}/estadisticas`);
+  }
+
+  listarCatalogo(): Observable<Publicacion[]> {
+    return this.http.get<Publicacion[]>(`${this.apiUrl}/catalogo`);
+  }
+
+  crearPublicacion(datos: DatosPublicacion): Observable<Publicacion> {
+    return this.http.post<Publicacion>(`${this.apiUrl}/catalogo`, datos);
+  }
+
+  actualizarPublicacion(
+    isbn: string,
+    datos: Partial<DatosPublicacion>,
+  ): Observable<Publicacion> {
+    return this.http.put<Publicacion>(
+      `${this.apiUrl}/catalogo/${encodeURIComponent(isbn)}`,
+      datos,
+    );
+  }
+
+  eliminarPublicacion(isbn: string): Observable<{ eliminada: string }> {
+    return this.http.delete<{ eliminada: string }>(
+      `${this.apiUrl}/catalogo/${encodeURIComponent(isbn)}`,
+    );
   }
 }

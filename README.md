@@ -54,8 +54,11 @@ Abre `http://localhost:4200`. La API estará disponible en `http://localhost:800
 ## Catálogo abierto
 
 Las búsquedas también consultan Open Library en tiempo real. Los resultados se guardan
-localmente en `data/bibliologos.db` y se reutilizan como caché. Si Open Library no está
-disponible, el sistema utiliza el catálogo local de ocho publicaciones como respaldo.
+localmente en `data/bibliologos.db` y se reutilizan como caché. El catálogo administrable
+se guarda por separado en `data/catalogo.db`: desde la opción **Mi catálogo** en la
+interfaz web se pueden registrar, actualizar y eliminar publicaciones locales, que
+permanecen después de reiniciar el backend. Si Open Library no está disponible, la
+búsqueda utiliza ese catálogo local como respaldo.
 
 > Nota: En algunos sistemas Linux/macOS utiliza `python3` en lugar de `python`.
 

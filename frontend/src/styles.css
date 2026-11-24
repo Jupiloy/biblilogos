@@ -14,3 +14,183 @@ button,
 input {
   font: inherit;
 }
+
+.app-shell .management-heading {
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.app-shell .management-list {
+  display: grid;
+  gap: 10px;
+  max-width: 900px;
+}
+
+.app-shell .management-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+  border: 1px solid #e8e3d9;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.app-shell .management-card h3 {
+  margin: 6px 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+}
+
+.app-shell .management-card p {
+  margin: 0 0 6px;
+  color: #77736c;
+}
+
+.app-shell .management-card small {
+  color: #858078;
+}
+
+.app-shell .management-actions,
+.app-shell .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-shell .primary-button,
+.app-shell .secondary-button,
+.app-shell .danger-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-shell .primary-button {
+  background: #25231f;
+  color: #fff;
+}
+
+.app-shell .secondary-button {
+  border-color: #ded9ce;
+  background: #fff;
+  color: #25231f;
+}
+
+.app-shell .danger-button {
+  border-color: #efd3d2;
+  background: #fff7f6;
+  color: #9c3434;
+}
+
+.app-shell .primary-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.app-shell .catalog-form {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 30px;
+  border: 1px solid #e4dfd5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(39 33 27 / 22%);
+}
+
+.app-shell .form-heading {
+  position: relative;
+  margin-bottom: 22px;
+  padding-right: 42px;
+}
+
+.app-shell .form-heading h2 {
+  font-size: 25px;
+}
+
+.app-shell .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.app-shell .form-grid label {
+  display: grid;
+  gap: 6px;
+  color: #555149;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.app-shell .form-grid input,
+.app-shell .form-grid select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #ded9ce;
+  border-radius: 8px;
+  background: #fff;
+  color: #25231f;
+  font-size: 14px;
+}
+
+.app-shell .form-grid input:focus,
+.app-shell .form-grid select:focus {
+  border-color: #8a3847;
+  outline: 2px solid rgb(138 56 71 / 12%);
+}
+
+.app-shell .form-wide {
+  grid-column: 1 / -1;
+}
+
+.app-shell .form-error {
+  margin: 0 0 16px;
+  color: #a32626;
+  font-size: 13px;
+}
+
+.app-shell .form-actions {
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+@media (max-width: 720px) {
+  .app-shell .management-heading,
+  .app-shell .management-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-shell .management-heading .primary-button {
+    align-self: flex-start;
+  }
+
+  .app-shell .management-actions {
+    justify-content: flex-end;
+  }
+
+  .app-shell .catalog-form {
+    padding: 24px 18px;
+  }
+
+  .app-shell .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell .form-wide {
+    grid-column: auto;
+  }
+
+  .app-shell .form-actions > button {
+    flex: 1;
+  }
+}

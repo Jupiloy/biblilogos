@@ -12,20 +12,22 @@
       }
     </header>
 
-    <section class="search-section" [class.with-results]="seRealizoBusqueda()">
-      @if (!seRealizoBusqueda()) {
-        <div class="welcome">
-          <span class="eyebrow">Descubre tu próxima lectura</span>
-          <h1>¿Qué te interesa explorar?</h1>
-        </div>
-      } @else if (vista() === 'explorar') {
-        <div class="explore-heading">
-          <span class="eyebrow">Descubre por categoría</span>
-          <h1>Explorar el conocimiento</h1>
-        </div>
-      }
-      <app-search-bar (buscar)="buscar($event)" />
-    </section>
+    @if (vista() !== 'catalogo') {
+      <section class="search-section" [class.with-results]="seRealizoBusqueda()">
+        @if (!seRealizoBusqueda()) {
+          <div class="welcome">
+            <span class="eyebrow">Descubre tu próxima lectura</span>
+            <h1>¿Qué te interesa explorar?</h1>
+          </div>
+        } @else if (vista() === 'explorar') {
+          <div class="explore-heading">
+            <span class="eyebrow">Descubre por categoría</span>
+            <h1>Explorar el conocimiento</h1>
+          </div>
+        }
+        <app-search-bar (buscar)="buscar($event)" />
+      </section>
+    }
 
     @if (vista() === 'explorar') {
       <nav class="category-list" aria-label="Categorías para explorar">
@@ -36,13 +38,51 @@
     }
 
     <section class="content">
-      @if (error()) {
+      @if (error() && !formularioAbierto()) {
         <div class="state">
           <strong>{{ error() }}</strong>
           <span>Comprueba que FastAPI esté disponible en el puerto 8000.</span>
         </div>
       } @else if (estaBuscando()) {
         <div class="state">Buscando en el catálogo…</div>
+      } @else if (vista() === 'catalogo') {
+        <div class="section-heading management-heading">
+          <div>
+            <span class="eyebrow">Administración local · se guarda en SQLite</span>
+            <h2>Mi catálogo</h2>
+          </div>
+          <button class="primary-button" type="button" (click)="abrirFormulario()">
+            Añadir publicación
+          </button>
+        </div>
+
+        @if (publicaciones().length === 0) {
+          <div class="state">
+            <strong>El catálogo está vacío.</strong>
+            <span>Añade una publicación para comenzar.</span>
+          </div>
+        } @else {
+          <div class="management-list">
+            @for (publicacion of publicaciones(); track publicacion.isbn) {
+              <article class="management-card">
+                <div>
+                  <span class="eyebrow">{{ publicacion.tipo === 'ebook' ? 'Ebook' : 'Libro físico' }}</span>
+                  <h3>{{ publicacion.titulo }}</h3>
+                  <p>{{ publicacion.autor }} · {{ publicacion.genero }}</p>
+                  <small>ISBN {{ publicacion.isbn }} · ★ {{ publicacion.calificacion }}</small>
+                </div>
+                <div class="management-actions">
+                  <button class="secondary-button" type="button" (click)="abrirFormulario(publicacion)">
+                    Editar
+                  </button>
+                  <button class="danger-button" type="button" (click)="eliminarDelCatalogo(publicacion)">
+                    Eliminar
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
       } @else if (seRealizoBusqueda() && publicaciones().length === 0) {
         <div class="state">
           <strong>No encontramos coincidencias.</strong>
@@ -172,8 +212,93 @@
               }
             </div>
           }
+
         </div>
       </section>
+    </div>
+  }
+
+  @if (formularioAbierto()) {
+    <div class="detail-backdrop" (click)="cerrarFormulario()">
+      <form class="catalog-form" (ngSubmit)="guardarFormulario()" (click)="$event.stopPropagation()">
+        <div class="form-heading">
+          <div>
+            <span class="eyebrow">{{ isbnEditando() ? 'Editar registro' : 'Nuevo registro' }}</span>
+            <h2>{{ isbnEditando() ? 'Actualizar publicación' : 'Añadir al catálogo' }}</h2>
+          </div>
+          <button class="detail-close" type="button" (click)="cerrarFormulario()" aria-label="Cerrar">×</button>
+        </div>
+
+        @if (error()) {
+          <p class="form-error" role="alert">{{ error() }}</p>
+        }
+
+        <div class="form-grid">
+          <label>
+            ISBN
+            <input [(ngModel)]="formulario.isbn" name="isbn" required minlength="4" />
+          </label>
+          <label>
+            Tipo
+            <select [(ngModel)]="formulario.tipo" name="tipo" [disabled]="isbnEditando() !== null">
+              <option value="fisico">Libro físico</option>
+              <option value="ebook">Ebook</option>
+            </select>
+          </label>
+          <label class="form-wide">
+            Título
+            <input [(ngModel)]="formulario.titulo" name="titulo" required />
+          </label>
+          <label>
+            Autor
+            <input [(ngModel)]="formulario.autor" name="autor" required />
+          </label>
+          <label>
+            Género
+            <input [(ngModel)]="formulario.genero" name="genero" required />
+          </label>
+          <label>
+            Páginas
+            <input [(ngModel)]="formulario.paginas" name="paginas" type="number" min="1" required />
+          </label>
+          <label>
+            Calificación (0–5)
+            <input [(ngModel)]="formulario.calificacion" name="calificacion" type="number" min="0" max="5" step="0.1" required />
+          </label>
+
+          @if (formulario.tipo === 'fisico') {
+            <label>
+              Stock
+              <input [(ngModel)]="formulario.stock" name="stock" type="number" min="0" required />
+            </label>
+            <label>
+              Ubicación
+              <input [(ngModel)]="formulario.ubicacion" name="ubicacion" required />
+            </label>
+          } @else {
+            <label>
+              Formato
+              <select [(ngModel)]="formulario.formato" name="formato">
+                <option value="PDF">PDF</option>
+                <option value="EPUB">EPUB</option>
+              </select>
+            </label>
+            <label>
+              Peso (MB)
+              <input [(ngModel)]="formulario.peso_mb" name="peso_mb" type="number" min="0.01" step="0.01" required />
+            </label>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button class="secondary-button" type="button" (click)="cerrarFormulario()">
+            Cancelar
+          </button>
+          <button class="primary-button" type="submit" [disabled]="guardandoFormulario()">
+            {{ guardandoFormulario() ? 'Guardando…' : 'Guardar publicación' }}
+          </button>
+        </div>
+      </form>
     </div>
   }
 </div>

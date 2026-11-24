@@ -16,6 +16,12 @@ export interface Publicacion {
   etiquetas?: string[];
 }
 
+export type DatosPublicacion = Pick<
+  Publicacion,
+  'isbn' | 'titulo' | 'autor' | 'genero' | 'paginas' | 'calificacion' | 'tipo'
+> &
+  Partial<Pick<Publicacion, 'formato' | 'ubicacion' | 'stock' | 'peso_mb'>>;
+
 export interface Recomendacion {
   publicacion: Publicacion;
   puntaje: number;

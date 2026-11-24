@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { App } from './app';
 
 describe('App', () => {
@@ -23,6 +26,42 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain(
       '¿Qué te interesa explorar?',
+    );
+  });
+
+  it('should load and display the local catalog', () => {
+    const fixture = TestBed.createComponent(App);
+    const httpTesting = TestBed.inject(HttpTestingController);
+    httpTesting.expectOne('http://localhost:8000/api/estadisticas').flush({
+      cantidad: 1,
+      calificacion_promedio: 4.5,
+      calificacion_mediana: 4.5,
+      paginas: 100,
+      horas_lectura: 3,
+    });
+
+    fixture.componentInstance.cambiarVista('catalogo');
+    httpTesting.expectOne('http://localhost:8000/api/catalogo').flush([
+      {
+        isbn: 'LOCAL-001',
+        titulo: 'Libro local',
+        autor: 'Autora',
+        genero: 'Ficción',
+        paginas: 100,
+        calificacion: 4.5,
+        tipo: 'fisico',
+        stock: 2,
+        ubicacion: 'Estante A',
+      },
+    ]);
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.management-card h3')?.textContent).toContain(
+      'Libro local',
+    );
+    expect(compiled.querySelector('.management-heading')?.textContent).toContain(
+      'se guarda en SQLite',
     );
   });
 });

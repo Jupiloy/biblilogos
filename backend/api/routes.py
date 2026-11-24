@@ -98,8 +98,25 @@ def obtener_publicacion(isbn: str):
     return crear_respuesta_publicacion(publicacion)
 
 
+@router.get("/catalogo", response_model=list[RespuestaPublicacion])
+def listar_catalogo_local():
+    return [
+        crear_respuesta_publicacion(publicacion)
+        for publicacion in servicio_catalogo.listar_publicaciones()
+    ]
+
+
 @router.post("/publicaciones", response_model=RespuestaPublicacion, status_code=201)
 def crear_publicacion(solicitud: SolicitudPublicacion):
+    try:
+        publicacion = servicio_catalogo.crear_publicacion(solicitud.model_dump())
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return crear_respuesta_publicacion(publicacion)
+
+
+@router.post("/catalogo", response_model=RespuestaPublicacion, status_code=201)
+def crear_publicacion_local(solicitud: SolicitudPublicacion):
     try:
         publicacion = servicio_catalogo.crear_publicacion(solicitud.model_dump())
     except (TypeError, ValueError) as error:
@@ -120,8 +137,33 @@ def actualizar_publicacion(isbn: str, solicitud: SolicitudActualizacionPublicaci
     return crear_respuesta_publicacion(publicacion)
 
 
+@router.put("/catalogo/{isbn}", response_model=RespuestaPublicacion)
+def actualizar_publicacion_local(
+    isbn: str,
+    solicitud: SolicitudActualizacionPublicacion,
+):
+    try:
+        publicacion = servicio_catalogo.actualizar_publicacion(
+            isbn, solicitud.model_dump(exclude_unset=True)
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return crear_respuesta_publicacion(publicacion)
+
+
 @router.delete("/publicaciones/{isbn}")
 def eliminar_publicacion(isbn: str):
+    try:
+        eliminada = servicio_catalogo.eliminar_publicacion(isbn)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"eliminada": eliminada.isbn}
+
+
+@router.delete("/catalogo/{isbn}")
+def eliminar_publicacion_local(isbn: str):
     try:
         eliminada = servicio_catalogo.eliminar_publicacion(isbn)
     except KeyError as error:

@@ -121,6 +121,7 @@ al final porque son resultados generados, no fuentes que normalmente se editan.
 | Archivo | Función |
 |---|---|
 | `data/bibliologos.db` | Base SQLite local usada como caché de resultados de Open Library. Se genera durante la ejecución y no es una fuente de código. |
+| `data/catalogo.db` | Base SQLite persistente del catálogo administrable. Conserva las publicaciones iniciales y las creadas, editadas o eliminadas desde la aplicación. |
 | `entregables/reportes/indicadores.csv` | Exportación tabular de indicadores generales del catálogo de prueba. |
 | `entregables/reportes/publicaciones_por_genero.csv` | Reporte agregado de publicaciones y métricas por género. |
 

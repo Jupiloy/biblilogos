@@ -37,3 +37,10 @@ capturas necesarias para explicar la interfaz y los conceptos principales:
 
 Las imágenes de código se regeneran automáticamente al ejecutar
 `./.venv/bin/python scripts/generar_presentacion.py`.
+
+## Catálogo web persistente
+
+La opción **Mi catálogo** de la interfaz permite crear, consultar, actualizar y
+eliminar publicaciones locales. Los cambios se guardan en `data/catalogo.db` y
+se conservan al reiniciar el backend. Los favoritos de **Guardados** son una
+colección personal aparte almacenada en el navegador.

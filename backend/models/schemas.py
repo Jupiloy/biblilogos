@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class RespuestaPublicacion(BaseModel):
@@ -37,6 +37,20 @@ class SolicitudPublicacion(BaseModel):
     ubicacion: str | None = None
     formato: str | None = None
     peso_mb: float | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def validar_datos_especificos(self):
+        if self.tipo == "fisico" and (
+            self.stock is None or not self.ubicacion or not self.ubicacion.strip()
+        ):
+            raise ValueError(
+                "Las publicaciones físicas requieren stock y ubicación."
+            )
+        if self.tipo == "ebook" and (
+            self.formato is None or self.peso_mb is None
+        ):
+            raise ValueError("Los ebooks requieren formato y peso en MB.")
+        return self
 
 
 class SolicitudActualizacionPublicacion(BaseModel):
