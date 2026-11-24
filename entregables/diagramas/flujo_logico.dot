@@ -1,0 +1,15 @@
+
+digraph G {
+  rankdir=LR; node [shape=box, style="rounded,filled", fillcolor="#E1D5E7", fontname="Arial"];
+  Hechos [shape=cylinder, label="Hechos\nes_autor / es_genero"];
+  Gustos [shape=cylinder, label="le_gusta(lector, libro)"];
+  Leidos [label="Excluir libros leídos"];
+  Unificar [label="Unificar autor/género"];
+  Estrategia [label="Estrategia combinada"];
+  Soluciones [label="Backtracking"];
+  Corte [shape=diamond, label="¿Corte (!)?"];
+  Mejor [label="Primera mejor solución"];
+  Todas [label="Todas las soluciones"];
+  Hechos -> Gustos -> Leidos -> Unificar -> Estrategia -> Soluciones -> Corte;
+  Corte -> Mejor [label="Sí"]; Corte -> Todas [label="No"];
+}

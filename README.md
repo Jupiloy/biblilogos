@@ -95,6 +95,7 @@ Los archivos finales se encuentran en `entregables/`:
 Para regenerar el informe:
 
 ```bash
+./.venv/bin/python scripts/generar_diagramas.py
 ./.venv/bin/python scripts/generar_informe.py
 libreoffice --headless --convert-to pdf --outdir entregables/pdf entregables/Informe_Tecnico_BiblioLogos.docx
 ```

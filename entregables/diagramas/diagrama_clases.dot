@@ -1,0 +1,13 @@
+
+digraph G {
+  rankdir=TB; node [shape=record, style=filled, fillcolor="#FFF2CC", fontname="Arial"];
+  Publicacion [label="{Publicacion|isbn : str\ltitulo : str\lautor : str\lgenero : str\npaginas : int\lcalificacion : float|obtener_ficha_inmutable()\lmostrar_info()}"];
+  LibroFisico [label="{LibroFisico|stock : int\lubicacion : str|mostrar_info()}"];
+  Ebook [label="{Ebook|formato : str\lpeso_mb : float|mostrar_info()}"];
+  Lector [label="{Lector|codigo : str\lnombre : str\lcorreo : str\lcategoria : str\llibros_leidos : list|registrar_lectura()}"];
+  Repositorio [label="{RepositorioBiblioteca|catalogo_por_isbn : dict\llectores_por_codigo : dict\lhistorial_prestamos : list|CRUD publicaciones\lCRUD lectores}"];
+  Fabrica [label="{FabricaPublicaciones|crear_publicacion()}"];
+  Publicacion -> LibroFisico [arrowhead=empty]; Publicacion -> Ebook [arrowhead=empty];
+  Fabrica -> Publicacion [arrowhead=vee, label="crea"];
+  Repositorio -> Publicacion [arrowhead=diamond]; Repositorio -> Lector [arrowhead=diamond];
+}

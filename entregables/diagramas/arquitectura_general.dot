@@ -1,0 +1,20 @@
+
+digraph G {
+  rankdir=LR; graph [bgcolor="white"]; node [shape=box, style="rounded,filled", fillcolor="#DAE8FC", fontname="Arial"];
+  Usuario [label="Usuario"];
+  Consola [label="main.py\nMenú consola"];
+  GUI [label="interfaz_grafica.py\nTkinter"];
+  Angular [label="Angular 20\nInterfaz web"];
+  API [label="FastAPI\nEndpoints REST"];
+  Funcional [label="motor_funcional.py"];
+  Logico [label="motor_logico.py"];
+  POO [label="modelos.py\nPOO y CRUD"];
+  Datos [label="analisis_datos.py\nPandas + NumPy"];
+  CSV [shape=cylinder, label="CSV de prueba"];
+  Cache [shape=cylinder, label="SQLite caché"];
+  Usuario -> Consola; Usuario -> GUI; Usuario -> Angular;
+  Consola -> Funcional; Consola -> Logico; Consola -> POO;
+  Angular -> API;
+  API -> POO; API -> Logico; API -> Datos;
+  Datos -> CSV; API -> Cache;
+}

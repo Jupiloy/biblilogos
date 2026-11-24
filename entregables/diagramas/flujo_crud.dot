@@ -1,0 +1,11 @@
+
+digraph G {
+  rankdir=LR; node [shape=box, style="rounded,filled", fillcolor="#F8CECC", fontname="Arial"];
+  Solicitud [label="Solicitud HTTP"];
+  Pydantic [label="Validación Pydantic"];
+  Servicio [label="ServicioCatalogo"];
+  Repositorio [shape=cylinder, label="RepositorioBiblioteca"];
+  Respuesta [label="Respuesta JSON"];
+  Solicitud -> Pydantic -> Servicio -> Repositorio;
+  Repositorio -> Servicio -> Respuesta;
+}

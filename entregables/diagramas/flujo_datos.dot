@@ -1,0 +1,10 @@
+
+digraph G {
+  rankdir=LR; node [shape=box, style="rounded,filled", fillcolor="#FFE6CC", fontname="Arial"];
+  CSV [shape=cylinder, label="catalogo_pruebas.csv"];
+  Pandas [label="Pandas\nread_csv / groupby"];
+  Validacion [label="Validación de tipos"];
+  NumPy [label="NumPy\nmean / median / sum / ceil"];
+  Reportes [shape=folder, label="CSV de resultados"];
+  CSV -> Pandas -> Validacion -> NumPy -> Reportes;
+}

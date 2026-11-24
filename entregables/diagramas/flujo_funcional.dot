@@ -1,0 +1,11 @@
+
+digraph G {
+  rankdir=LR; node [shape=box, style="rounded,filled", fillcolor="#D5E8D4", fontname="Arial"];
+  Catalogo [label="Catálogo original"];
+  Genero [label="filter()\nfiltrar género"];
+  Calificacion [label="filter()\ncalificación mínima"];
+  Map [label="map()\ncalcular horas"];
+  Reduce [label="reduce()\nsumar páginas"];
+  Resultado [shape=folder, label="Diccionario de resultados"];
+  Catalogo -> Genero -> Calificacion -> Map -> Reduce -> Resultado;
+}
