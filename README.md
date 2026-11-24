@@ -85,6 +85,8 @@ PY
 
 ## Entregables académicos
 
+El mapa de archivos y sus funciones está en [`GUIA_DE_ARCHIVOS.md`](./GUIA_DE_ARCHIVOS.md).
+
 Los archivos finales se encuentran en `entregables/`:
 
 - `Informe_Tecnico_BiblioLogos.docx`: informe editable en Word.
