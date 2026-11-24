@@ -1,13 +1,26 @@
 import math
 import statistics
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+)
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from backend.models.schemas import (
+    RespuestaSesion,
     RespuestaPublicacion,
     RespuestaRecomendacion,
+    RespuestaUsuario,
     SolicitudActualizacionPublicacion,
+    SolicitudCredenciales,
     SolicitudPublicacion,
+)
+from backend.services.auth_service import (
+    ServicioAutenticacion,
+    UsuarioDuplicadoError,
 )
 from backend.services.catalog_service import ServicioCatalogo
 from backend.services.recommendation_service import ServicioRecomendaciones
@@ -15,9 +28,39 @@ from backend.services.open_library_service import ServicioBibliotecaAbierta
 
 
 router = APIRouter()
+servicio_autenticacion = ServicioAutenticacion()
+esquema_bearer = HTTPBearer(auto_error=False)
 servicio_catalogo = ServicioCatalogo()
 servicio_recomendaciones = ServicioRecomendaciones(servicio_catalogo)
 biblioteca_abierta = ServicioBibliotecaAbierta()
+
+
+def usuario_autenticado(
+    credentials: HTTPAuthorizationCredentials | None = Depends(esquema_bearer),
+) -> dict:
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Debes iniciar sesión para continuar.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    usuario = servicio_autenticacion.autenticar_token(credentials.credentials)
+    if usuario is None:
+        raise HTTPException(
+            status_code=401,
+            detail="La sesión no es válida o ha expirado.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return usuario
+
+
+def administrador_actual(usuario: dict = Depends(usuario_autenticado)) -> dict:
+    if usuario["role"] != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Solo un administrador puede gestionar el catálogo.",
+        )
+    return usuario
 
 
 def crear_respuesta_publicacion(publicacion: object) -> RespuestaPublicacion:
@@ -43,11 +86,54 @@ def health():
     return {"estado": "ok"}
 
 
+@router.post("/auth/register", response_model=RespuestaSesion, status_code=201)
+def registrar_lector(credenciales: SolicitudCredenciales):
+    try:
+        usuario = servicio_autenticacion.crear_usuario(
+            credenciales.username, credenciales.password, "lector"
+        )
+    except UsuarioDuplicadoError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    sesion = servicio_autenticacion.iniciar_sesion(
+        credenciales.username, credenciales.password
+    )
+    if sesion is None:
+        raise HTTPException(status_code=500, detail="No fue posible iniciar la sesión.")
+    return sesion
+
+
+@router.post("/auth/login", response_model=RespuestaSesion)
+def iniciar_sesion(credenciales: SolicitudCredenciales):
+    sesion = servicio_autenticacion.iniciar_sesion(
+        credenciales.username, credenciales.password
+    )
+    if sesion is None:
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos.")
+    return sesion
+
+
+@router.get("/auth/me", response_model=RespuestaUsuario)
+def obtener_usuario_actual(usuario: dict = Depends(usuario_autenticado)):
+    return usuario
+
+
+@router.post("/auth/logout", status_code=204)
+def cerrar_sesion(
+    credentials: HTTPAuthorizationCredentials | None = Depends(esquema_bearer),
+    usuario: dict = Depends(usuario_autenticado),
+):
+    if credentials is not None:
+        servicio_autenticacion.cerrar_sesion(credentials.credentials)
+
+
 @router.get("/publicaciones", response_model=list[RespuestaPublicacion])
 def buscar_publicaciones(
     consulta: str = "",
     genero: str = "todos",
     limit: int = Query(default=20, ge=1, le=100),
+    usuario: dict = Depends(usuario_autenticado),
 ):
     externas = biblioteca_abierta.buscar(consulta, genero, limit)
     if externas:
@@ -74,7 +160,7 @@ def buscar_publicaciones(
 
 
 @router.get("/publicaciones/{isbn}", response_model=RespuestaPublicacion)
-def obtener_publicacion(isbn: str):
+def obtener_publicacion(isbn: str, usuario: dict = Depends(usuario_autenticado)):
     externa = biblioteca_abierta.obtener_publicacion(isbn)
     if externa is not None:
         return RespuestaPublicacion(
@@ -98,7 +184,11 @@ def obtener_publicacion(isbn: str):
     return crear_respuesta_publicacion(publicacion)
 
 
-@router.get("/catalogo", response_model=list[RespuestaPublicacion])
+@router.get(
+    "/catalogo",
+    response_model=list[RespuestaPublicacion],
+    dependencies=[Depends(administrador_actual)],
+)
 def listar_catalogo_local():
     return [
         crear_respuesta_publicacion(publicacion)
@@ -106,7 +196,12 @@ def listar_catalogo_local():
     ]
 
 
-@router.post("/publicaciones", response_model=RespuestaPublicacion, status_code=201)
+@router.post(
+    "/publicaciones",
+    response_model=RespuestaPublicacion,
+    status_code=201,
+    dependencies=[Depends(administrador_actual)],
+)
 def crear_publicacion(solicitud: SolicitudPublicacion):
     try:
         publicacion = servicio_catalogo.crear_publicacion(solicitud.model_dump())
@@ -115,7 +210,12 @@ def crear_publicacion(solicitud: SolicitudPublicacion):
     return crear_respuesta_publicacion(publicacion)
 
 
-@router.post("/catalogo", response_model=RespuestaPublicacion, status_code=201)
+@router.post(
+    "/catalogo",
+    response_model=RespuestaPublicacion,
+    status_code=201,
+    dependencies=[Depends(administrador_actual)],
+)
 def crear_publicacion_local(solicitud: SolicitudPublicacion):
     try:
         publicacion = servicio_catalogo.crear_publicacion(solicitud.model_dump())
@@ -124,7 +224,11 @@ def crear_publicacion_local(solicitud: SolicitudPublicacion):
     return crear_respuesta_publicacion(publicacion)
 
 
-@router.put("/publicaciones/{isbn}", response_model=RespuestaPublicacion)
+@router.put(
+    "/publicaciones/{isbn}",
+    response_model=RespuestaPublicacion,
+    dependencies=[Depends(administrador_actual)],
+)
 def actualizar_publicacion(isbn: str, solicitud: SolicitudActualizacionPublicacion):
     try:
         publicacion = servicio_catalogo.actualizar_publicacion(
@@ -137,7 +241,11 @@ def actualizar_publicacion(isbn: str, solicitud: SolicitudActualizacionPublicaci
     return crear_respuesta_publicacion(publicacion)
 
 
-@router.put("/catalogo/{isbn}", response_model=RespuestaPublicacion)
+@router.put(
+    "/catalogo/{isbn}",
+    response_model=RespuestaPublicacion,
+    dependencies=[Depends(administrador_actual)],
+)
 def actualizar_publicacion_local(
     isbn: str,
     solicitud: SolicitudActualizacionPublicacion,
@@ -153,7 +261,10 @@ def actualizar_publicacion_local(
     return crear_respuesta_publicacion(publicacion)
 
 
-@router.delete("/publicaciones/{isbn}")
+@router.delete(
+    "/publicaciones/{isbn}",
+    dependencies=[Depends(administrador_actual)],
+)
 def eliminar_publicacion(isbn: str):
     try:
         eliminada = servicio_catalogo.eliminar_publicacion(isbn)
@@ -162,7 +273,10 @@ def eliminar_publicacion(isbn: str):
     return {"eliminada": eliminada.isbn}
 
 
-@router.delete("/catalogo/{isbn}")
+@router.delete(
+    "/catalogo/{isbn}",
+    dependencies=[Depends(administrador_actual)],
+)
 def eliminar_publicacion_local(isbn: str):
     try:
         eliminada = servicio_catalogo.eliminar_publicacion(isbn)
@@ -178,6 +292,7 @@ def eliminar_publicacion_local(isbn: str):
 def obtener_recomendaciones(
     isbn: str,
     limit: int = Query(default=6, ge=1, le=20),
+    usuario: dict = Depends(usuario_autenticado),
 ):
     fuente_externa = biblioteca_abierta.obtener_publicacion(isbn)
     if fuente_externa is not None:
@@ -218,7 +333,7 @@ def obtener_recomendaciones(
 
 
 @router.get("/estadisticas")
-def obtener_estadisticas():
+def obtener_estadisticas(usuario: dict = Depends(usuario_autenticado)):
     publicaciones = servicio_catalogo.listar_publicaciones()
     if not publicaciones:
         return {

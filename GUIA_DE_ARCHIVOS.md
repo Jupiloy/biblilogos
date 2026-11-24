@@ -23,7 +23,7 @@ al final porque son resultados generados, no fuentes que normalmente se editan.
 | `modelos.py` | Define las clases del dominio: publicaciones físicas y digitales, lectores, fábrica y repositorio con operaciones CRUD y validaciones. |
 | `motor_funcional.py` | Contiene funciones para filtrar, transformar y resumir el catálogo; incluye el pipeline `filter`, `map` y `reduce`. |
 | `motor_logico.py` | Simula en Python conceptos de programación lógica: hechos, unificación, recursividad cabeza/cola, estrategias e inferencia de recomendaciones. |
-| `analisis_datos.py` | Carga y valida CSV con Pandas, calcula indicadores con Pandas/NumPy y exporta reportes. |
+| `analisis_datos.py` | Lee el catálogo persistente SQLite o CSV de prueba, valida datos, calcula indicadores con Pandas/NumPy y exporta reportes. |
 | `interfaz_grafica.py` | Interfaz de escritorio Tkinter para consultar y gestionar el catálogo y probar funciones del proyecto. Es una alternativa a la interfaz web. |
 
 ## 2. Backend FastAPI
@@ -37,9 +37,11 @@ al final porque son resultados generados, no fuentes que normalmente se editan.
 | `backend/models/__init__.py` | Marca `backend.models` como paquete Python. |
 | `backend/models/schemas.py` | Define con Pydantic los formatos de solicitudes y respuestas, además de restricciones como páginas positivas y calificación de 0 a 5. |
 | `backend/services/__init__.py` | Marca `backend.services` como paquete Python de servicios. |
+| `backend/services/auth_service.py` | Registra usuarios, verifica contraseñas con PBKDF2 y gestiona sesiones bearer con vencimiento en SQLite. |
 | `backend/services/catalog_service.py` | Adapta el repositorio de dominio para listar, buscar y ejecutar CRUD desde la API; reutiliza la precarga declarada en `main.py`. |
 | `backend/services/open_library_service.py` | Consulta Open Library, convierte sus resultados al formato de la aplicación y mantiene una caché local SQLite; también recomienda títulos externos. |
 | `backend/services/recommendation_service.py` | Recomienda publicaciones del catálogo local según coincidencias de autor y género, puntúa resultados y aplica un límite. |
+| `backend/create_admin.py` | Crea una cuenta administradora local solicitando la contraseña de forma oculta desde la terminal. |
 
 ## 3. Interfaz web Angular
 
@@ -95,6 +97,8 @@ al final porque son resultados generados, no fuentes que normalmente se editan.
 |---|---|
 | `frontend/src/app/core/models/library.models.ts` | Define interfaces TypeScript para publicaciones, recomendaciones e indicadores. |
 | `frontend/src/app/core/services/library.service.ts` | Encapsula las solicitudes HTTP para buscar, recomendar y consultar estadísticas en FastAPI. |
+| `frontend/src/app/core/services/auth.service.ts` | Inicia/cierra sesión, registra lectores y mantiene el estado de usuario autenticado. |
+| `frontend/src/app/core/interceptors/auth.interceptor.ts` | Adjunta el token bearer a solicitudes de la API usando la sesión de la pestaña. |
 
 ## 4. Pruebas y datos de prueba
 
@@ -102,7 +106,8 @@ al final porque son resultados generados, no fuentes que normalmente se editan.
 |---|---|
 | `tests/test_modelos.py` | Prueba el CRUD del repositorio y el rechazo de publicaciones duplicadas. |
 | `tests/test_paradigmas.py` | Prueba el pipeline funcional, la unificación, la recursividad y las recomendaciones lógicas simuladas. |
-| `tests/test_analisis_datos.py` | Prueba la carga CSV, indicadores NumPy/Pandas y creación de reportes. |
+| `tests/test_analisis_datos.py` | Prueba CSV, carga SQLite actualizable, indicadores NumPy/Pandas y creación de reportes. |
+| `tests/test_auth_service.py` | Prueba hash de credenciales, sesiones, revocación y validación de roles. |
 | `tests/fixtures/catalogo_pruebas.csv` | Catálogo pequeño y controlado usado por las pruebas de análisis. |
 
 ## 5. Scripts de generación
@@ -122,6 +127,7 @@ al final porque son resultados generados, no fuentes que normalmente se editan.
 |---|---|
 | `data/bibliologos.db` | Base SQLite local usada como caché de resultados de Open Library. Se genera durante la ejecución y no es una fuente de código. |
 | `data/catalogo.db` | Base SQLite persistente del catálogo administrable. Conserva las publicaciones iniciales y las creadas, editadas o eliminadas desde la aplicación. |
+| `data/usuarios.db` | Base SQLite de cuentas y sesiones. Guarda hashes de contraseña, no contraseñas en texto plano, y tokens de sesión revocables. |
 | `entregables/reportes/indicadores.csv` | Exportación tabular de indicadores generales del catálogo de prueba. |
 | `entregables/reportes/publicaciones_por_genero.csv` | Reporte agregado de publicaciones y métricas por género. |
 
@@ -161,7 +167,7 @@ tienen una versión editable `.drawio`.
 | `entregables/EVIDENCIAS.md` | Reúne el comando de pruebas, el procedimiento de análisis y las capturas incluidas en la exposición. |
 | `entregables/Informe_Tecnico_BiblioLogos.docx` | Informe técnico editable del proyecto. |
 | `entregables/pdf/Informe_Tecnico_BiblioLogos.pdf` | Versión PDF del informe. |
-| `entregables/Presentacion_BiblioLogos.pptx` | Presentación de 9 diapositivas preparada para un máximo de 10 minutos. |
+| `entregables/Presentacion_BiblioLogos.pptx` | Presentación explicativa de 15 diapositivas preparada para 9:30 minutos. |
 
 ## 7. Archivos generados
 

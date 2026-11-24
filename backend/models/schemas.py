@@ -64,3 +64,19 @@ class SolicitudActualizacionPublicacion(BaseModel):
     ubicacion: str | None = None
     formato: str | None = None
     peso_mb: float | None = Field(default=None, gt=0)
+
+
+class SolicitudCredenciales(BaseModel):
+    username: str = Field(min_length=3, max_length=32)
+    password: str = Field(min_length=12, max_length=128)
+
+
+class RespuestaUsuario(BaseModel):
+    username: str
+    role: str
+
+
+class RespuestaSesion(RespuestaUsuario):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int

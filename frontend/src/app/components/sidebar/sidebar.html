@@ -20,10 +20,12 @@
         <span class="nav-icon" aria-hidden="true">☆</span>
         Guardados
       </button>
-      <button class="nav-item" [class.active]="active === 'catalogo'" type="button" (click)="navegar('catalogo')">
-        <span class="nav-icon" aria-hidden="true">▤</span>
-        Mi catálogo
-      </button>
+      @if (role() === 'admin') {
+        <button class="nav-item" [class.active]="active === 'catalogo'" type="button" (click)="navegar('catalogo')">
+          <span class="nav-icon" aria-hidden="true">▤</span>
+          Mi catálogo
+        </button>
+      }
     </nav>
   }
 

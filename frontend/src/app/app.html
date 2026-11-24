@@ -1,5 +1,11 @@
+@if (auth.cargando()) {
+  <main class="auth-screen">
+    <p>Verificando sesión…</p>
+  </main>
+} @else if (auth.usuario(); as usuario) {
 <div class="app-shell" [class.sidebar-collapsed]="barraLateralOculta()">
   <app-sidebar
+    [role]="usuario.role"
     (collapsedChange)="barraLateralOculta.set($event)"
     (navigationChange)="cambiarVista($event)"
   />
@@ -10,6 +16,10 @@
       @if (estadisticas()) {
         <span>{{ estadisticas()!.cantidad }} publicaciones · {{ estadisticas()!.calificacion_promedio }}/5</span>
       }
+      <div class="user-session">
+        <span>{{ usuario.username }} · {{ usuario.role === 'admin' ? 'Administrador' : 'Lector' }}</span>
+        <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+      </div>
     </header>
 
     @if (vista() !== 'catalogo') {
@@ -302,3 +312,62 @@
     </div>
   }
 </div>
+} @else {
+  <main class="auth-screen">
+    <section class="auth-card">
+      <span class="eyebrow">BiblioLogos</span>
+      <h1>{{ modoRegistro() ? 'Crear cuenta de lector' : 'Iniciar sesión' }}</h1>
+      <p>
+        {{ modoRegistro()
+          ? 'Las cuentas nuevas tienen permisos de lector.'
+          : 'Ingresa con tu cuenta para buscar y administrar publicaciones.' }}
+      </p>
+
+      @if (errorAutenticacion()) {
+        <p class="form-error" role="alert">{{ errorAutenticacion() }}</p>
+      }
+
+      <form (ngSubmit)="enviarCredenciales()">
+        <label>
+          Usuario
+          <input
+            [(ngModel)]="nombreUsuario"
+            name="username"
+            required
+            minlength="3"
+            maxlength="32"
+            autocomplete="username"
+          />
+        </label>
+        <label>
+          Contraseña
+          <input
+            [(ngModel)]="contrasena"
+            name="password"
+            type="password"
+            required
+            minlength="12"
+            maxlength="128"
+            [attr.autocomplete]="modoRegistro() ? 'new-password' : 'current-password'"
+          />
+        </label>
+        <button class="primary-button" type="submit" [disabled]="autenticando()">
+          {{ autenticando()
+            ? 'Procesando…'
+            : modoRegistro()
+              ? 'Crear cuenta'
+              : 'Entrar' }}
+        </button>
+      </form>
+
+      <button
+        class="auth-switch"
+        type="button"
+        (click)="modoRegistro.set(!modoRegistro()); errorAutenticacion.set('')"
+      >
+        {{ modoRegistro() ? 'Ya tengo una cuenta' : 'Crear una cuenta de lector' }}
+      </button>
+      <small>Las cuentas de administrador se crean desde el entorno local del backend.</small>
+    </section>
+  </main>
+}

@@ -1,18 +1,29 @@
 """Análisis académico del catálogo con Pandas y NumPy."""
 
+import sqlite3
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 
-def cargar_catalogo(ruta_csv: str | Path) -> pd.DataFrame:
-    """Carga y valida datos bibliográficos desde un CSV."""
-    dataframe = pd.read_csv(ruta_csv)
-    requeridas = {"isbn", "titulo", "autor", "genero", "paginas", "calificacion", "tipo"}
-    faltantes = requeridas.difference(dataframe.columns)
+COLUMNAS_CATALOGO = {
+    "isbn",
+    "titulo",
+    "autor",
+    "genero",
+    "paginas",
+    "calificacion",
+    "tipo",
+}
+
+
+def _validar_catalogo(dataframe: pd.DataFrame) -> pd.DataFrame:
+    faltantes = COLUMNAS_CATALOGO.difference(dataframe.columns)
     if faltantes:
-        raise ValueError(f"Faltan columnas CSV: {', '.join(sorted(faltantes))}")
+        raise ValueError(
+            f"Faltan columnas del catálogo: {', '.join(sorted(faltantes))}"
+        )
 
     dataframe = dataframe.copy()
     dataframe["paginas"] = pd.to_numeric(dataframe["paginas"], errors="raise")
@@ -22,6 +33,34 @@ def cargar_catalogo(ruta_csv: str | Path) -> pd.DataFrame:
     if dataframe["calificacion"].between(0.0, 5.0).eq(False).any():
         raise ValueError("Las calificaciones deben estar entre 0.0 y 5.0.")
     return dataframe
+
+
+def cargar_catalogo(ruta_csv: str | Path) -> pd.DataFrame:
+    """Carga y valida un CSV de catálogo, incluido el fixture de pruebas."""
+    return _validar_catalogo(pd.read_csv(ruta_csv))
+
+
+def cargar_catalogo_sqlite(ruta_db: str | Path | None = None) -> pd.DataFrame:
+    """Carga y valida el catálogo actual desde SQLite en modo de solo lectura."""
+    database_path = (
+        Path(ruta_db)
+        if ruta_db is not None
+        else Path(__file__).resolve().parent / "data" / "catalogo.db"
+    )
+    if not database_path.is_file():
+        raise FileNotFoundError(f"No existe la base de catálogo: {database_path}")
+
+    database_uri = f"{database_path.resolve().as_uri()}?mode=ro"
+    with sqlite3.connect(database_uri, uri=True) as connection:
+        dataframe = pd.read_sql_query(
+            """
+            SELECT isbn, titulo, autor, genero, paginas, calificacion, tipo
+            FROM publications
+            ORDER BY rowid
+            """,
+            connection,
+        )
+    return _validar_catalogo(dataframe)
 
 
 def generar_indicadores(dataframe: pd.DataFrame) -> dict:
@@ -64,3 +103,21 @@ def exportar_reportes(dataframe: pd.DataFrame, carpeta_salida: str | Path) -> tu
          for clave, valor in indicadores.items() if clave != "generos"]
     ).to_csv(ruta_indicadores, index=False)
     return ruta_genero, ruta_indicadores
+
+
+def main() -> None:
+    """Analiza la base SQLite del catálogo y exporta sus reportes actuales."""
+    dataframe = cargar_catalogo_sqlite()
+    print("Indicadores del catálogo local:")
+    print(generar_indicadores(dataframe))
+    carpeta_reportes = (
+        Path(__file__).resolve().parent / "entregables" / "reportes"
+    )
+    rutas = exportar_reportes(dataframe, carpeta_reportes)
+    print("Reportes generados:")
+    for ruta in rutas:
+        print(ruta)
+
+
+if __name__ == "__main__":
+    main()

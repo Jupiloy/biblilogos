@@ -8,11 +8,21 @@ Comando:
 ./.venv/bin/python -m unittest discover -s tests -v
 ```
 
-Resultado esperado: 6 pruebas aprobadas.
+Resultado verificado: 14 pruebas Python aprobadas.
 
-## Análisis NumPy/Pandas
+## Análisis NumPy/Pandas del catálogo actual
 
-Comando:
+Ejecuta el análisis contra el catálogo persistente en SQLite:
+
+```bash
+./.venv/bin/python -m analisis_datos
+```
+
+La lectura de `data/catalogo.db` es de solo lectura; los reportes se generan en
+`entregables/reportes/`. El CSV pequeño de pruebas permanece como fixture para
+reproducir los casos automatizados.
+
+Para ejecutar los indicadores sobre el CSV fijo de prueba:
 
 ```bash
 ./.venv/bin/python - <<'PY'
@@ -24,9 +34,9 @@ PY
 
 ## Capturas incluidas en la exposición
 
-La presentación dura aproximadamente 9 minutos y 30 segundos, con 30 segundos
-de margen para no superar el límite de 10 minutos. Se seleccionaron solo las
-capturas necesarias para explicar la interfaz y los conceptos principales:
+La presentación tiene 15 diapositivas y dura aproximadamente 9 minutos y 30
+segundos, con 30 segundos de margen para no superar el límite de 10 minutos.
+Incluye capturas y diagramas para explicar la interfaz y los conceptos:
 
 - `capturas/busqueda_resultados.png`: búsqueda real desde la interfaz web.
 - `capturas/codigo_motor_funcional_101_129.png`: pipeline `filter`, `map` y `reduce`.
@@ -44,3 +54,10 @@ La opción **Mi catálogo** de la interfaz permite crear, consultar, actualizar 
 eliminar publicaciones locales. Los cambios se guardan en `data/catalogo.db` y
 se conservan al reiniciar el backend. Los favoritos de **Guardados** son una
 colección personal aparte almacenada en el navegador.
+
+## Acceso por roles
+
+Las cuentas lectoras pueden registrarse desde la interfaz, buscar publicaciones y
+ver recomendaciones. La cuenta administradora se crea localmente con
+`./.venv/bin/python -m backend.create_admin`; solo ese rol puede ejecutar el CRUD
+del catálogo. La API verifica la sesión y el rol en cada operación protegida.

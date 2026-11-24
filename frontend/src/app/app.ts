@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TarjetaPublicacion } from './components/publication-card/publication-card';
 import { BarraBusqueda } from './components/search-bar/search-bar';
 import { Sidebar } from './components/sidebar/sidebar';
+import { ServicioAutenticacion } from './core/services/auth.service';
 import { ServicioBiblioteca } from './core/services/library.service';
 import {
   DatosPublicacion,
@@ -33,6 +34,7 @@ interface FormularioPublicacion {
   styleUrl: './app.css'
 })
 export class App {
+  readonly auth = inject(ServicioAutenticacion);
   private readonly biblioteca = inject(ServicioBiblioteca);
 
   readonly barraLateralOculta = signal(false);
@@ -42,10 +44,16 @@ export class App {
   readonly formularioAbierto = signal(false);
   readonly guardandoFormulario = signal(false);
   readonly isbnEditando = signal<string | null>(null);
+  readonly modoRegistro = signal(false);
+  readonly autenticando = signal(false);
+  readonly errorAutenticacion = signal('');
+  nombreUsuario = '';
+  contrasena = '';
   readonly publicaciones = signal<Publicacion[]>([]);
   readonly recomendaciones = signal<Recomendacion[]>([]);
   readonly estadisticas = signal<EstadisticasBiblioteca | null>(null);
   readonly vista = signal<'buscar' | 'explorar' | 'guardados' | 'catalogo'>('buscar');
+  private usuarioGuardados: string | null = null;
   formulario: FormularioPublicacion = this.formularioVacio();
   readonly categorias = [
     { nombre: 'Literatura', consulta: 'literature' },
@@ -56,12 +64,67 @@ export class App {
     { nombre: 'Arte', consulta: 'art' },
   ];
   readonly publicacionAbierta = signal<Publicacion | null>(null);
-  readonly publicacionesGuardadas = signal<Publicacion[]>(
-    JSON.parse(localStorage.getItem('bibliologos_guardados') ?? '[]'),
-  );
+  readonly publicacionesGuardadas = signal<Publicacion[]>([]);
 
   constructor() {
-    this.cargarEstadisticas();
+    this.auth.restaurarSesion().subscribe({
+      next: (usuario) => {
+        if (usuario) {
+          this.cargarGuardados(usuario.username);
+          this.cargarEstadisticas();
+        }
+      },
+      error: () => {
+        this.errorAutenticacion.set('La sesión expiró. Inicia sesión de nuevo.');
+      },
+    });
+  }
+
+  enviarCredenciales(): void {
+    this.errorAutenticacion.set('');
+    this.autenticando.set(true);
+    const request = this.modoRegistro()
+      ? this.auth.registrarLector(this.nombreUsuario, this.contrasena)
+      : this.auth.iniciarSesion(this.nombreUsuario, this.contrasena);
+    request.subscribe({
+      next: () => {
+        this.autenticando.set(false);
+        this.contrasena = '';
+        const usuario = this.auth.usuario();
+        if (usuario) {
+          this.cargarGuardados(usuario.username);
+        }
+        this.cargarEstadisticas();
+      },
+      error: (error: unknown) => {
+        this.autenticando.set(false);
+        this.errorAutenticacion.set(
+          this.mensajeError(
+            error,
+            this.modoRegistro()
+              ? 'No fue posible crear la cuenta.'
+              : 'No fue posible iniciar sesión.',
+          ),
+        );
+      },
+    });
+  }
+
+  cerrarSesion(): void {
+    this.auth.cerrarSesion().subscribe({
+      next: () => {
+        this.errorAutenticacion.set('');
+        this.estadisticas.set(null);
+        this.publicaciones.set([]);
+        this.usuarioGuardados = null;
+        this.publicacionesGuardadas.set([]);
+      },
+      error: () => {
+        this.errorAutenticacion.set(
+          'Se cerró la sesión localmente, pero no se pudo confirmar con el servidor.',
+        );
+      },
+    });
   }
 
   private cargarEstadisticas(): void {
@@ -99,6 +162,10 @@ export class App {
   cambiarVista(
     vista: 'buscar' | 'explorar' | 'guardados' | 'catalogo',
   ): void {
+    if (vista === 'catalogo' && this.auth.usuario()?.role !== 'admin') {
+      this.error.set('Solo un administrador puede gestionar el catálogo.');
+      return;
+    }
     this.vista.set(vista);
     this.publicacionAbierta.set(null);
     this.recomendaciones.set([]);
@@ -287,21 +354,27 @@ export class App {
   }
 
   guardarPublicacion(publicacion: Publicacion): void {
+    if (!this.usuarioGuardados) {
+      return;
+    }
     const guardadas = this.publicacionesGuardadas();
     if (guardadas.some((item) => item.isbn === publicacion.isbn)) {
       return;
     }
     const actualizadas = [...guardadas, publicacion];
     this.publicacionesGuardadas.set(actualizadas);
-    localStorage.setItem('bibliologos_guardados', JSON.stringify(actualizadas));
+    localStorage.setItem(this.claveGuardados(), JSON.stringify(actualizadas));
   }
 
   quitarPublicacion(publicacion: Publicacion): void {
+    if (!this.usuarioGuardados) {
+      return;
+    }
     const actualizadas = this.publicacionesGuardadas().filter(
       (item) => item.isbn !== publicacion.isbn,
     );
     this.publicacionesGuardadas.set(actualizadas);
-    localStorage.setItem('bibliologos_guardados', JSON.stringify(actualizadas));
+    localStorage.setItem(this.claveGuardados(), JSON.stringify(actualizadas));
   }
 
   estaGuardada(publicacion: Publicacion): boolean {
@@ -310,5 +383,37 @@ export class App {
 
   cerrarDetalle(): void {
     this.publicacionAbierta.set(null);
+  }
+
+  private cargarGuardados(username: string): void {
+    this.usuarioGuardados = username;
+    try {
+      const datos = localStorage.getItem(this.claveGuardados());
+      const guardados: unknown = datos ? JSON.parse(datos) : [];
+      if (
+        !Array.isArray(guardados) ||
+        !guardados.every(
+          (item: unknown): item is Publicacion =>
+            typeof item === 'object' &&
+            item !== null &&
+            'isbn' in item &&
+            typeof item.isbn === 'string' &&
+            'titulo' in item &&
+            typeof item.titulo === 'string' &&
+            'autor' in item &&
+            typeof item.autor === 'string',
+        )
+      ) {
+        throw new Error('El formato de guardados no es válido.');
+      }
+      this.publicacionesGuardadas.set(guardados);
+    } catch {
+      this.publicacionesGuardadas.set([]);
+      this.error.set('No se pudieron leer los guardados de esta cuenta.');
+    }
+  }
+
+  private claveGuardados(): string {
+    return `bibliologos_guardados_${this.usuarioGuardados}`;
   }
 }

@@ -35,3 +35,8 @@ export interface EstadisticasBiblioteca {
   paginas: number;
   horas_lectura: number;
 }
+
+export interface UsuarioAutenticado {
+  username: string;
+  role: 'admin' | 'lector';
+}

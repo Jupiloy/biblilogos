@@ -1,20 +1,30 @@
 
 digraph G {
-  rankdir=LR; graph [bgcolor="white"]; node [shape=box, style="rounded,filled", fillcolor="#DAE8FC", fontname="Arial"];
+  rankdir=LR; graph [bgcolor="white", ranksep="0.55", nodesep="0.35"]; node [shape=box, style="rounded,filled", fillcolor="#DAE8FC", fontname="Arial", fontsize=11];
   Usuario [label="Usuario"];
   Consola [label="main.py\nMenú consola"];
   GUI [label="interfaz_grafica.py\nTkinter"];
   Angular [label="Angular 20\nInterfaz web"];
   API [label="FastAPI\nEndpoints REST"];
-  Funcional [label="motor_funcional.py"];
-  Logico [label="motor_logico.py"];
-  POO [label="modelos.py\nPOO y CRUD"];
+  Auth [label="ServicioAutenticacion\nroles y sesiones"];
+  UsuariosDB [shape=cylinder, label="SQLite\nusuarios.db"];
+  Catalogo [label="ServicioCatalogo"];
+  CatalogoDB [shape=cylinder, label="SQLite\ncatalogo.db"];
+  OpenLibrary [label="ServicioOpenLibrary"];
+  Recomendador [label="ServicioRecomendaciones"];
+  Cache [shape=cylinder, label="SQLite\nbibliologos.db"];
+  Funcional [label="motor_funcional.py\nfilter/map/reduce"];
+  Logico [label="motor_logico.py\ninferencia simulada"];
+  POO [label="modelos.py\nclases y repositorio"];
   Datos [label="analisis_datos.py\nPandas + NumPy"];
   CSV [shape=cylinder, label="CSV de prueba"];
-  Cache [shape=cylinder, label="SQLite caché"];
+  Reportes [shape=folder, label="Reportes CSV"];
   Usuario -> Consola; Usuario -> GUI; Usuario -> Angular;
   Consola -> Funcional; Consola -> Logico; Consola -> POO;
   Angular -> API;
-  API -> POO; API -> Logico; API -> Datos;
-  Datos -> CSV; API -> Cache;
+  API -> Auth; Auth -> UsuariosDB;
+  API -> Catalogo; Catalogo -> POO; Catalogo -> CatalogoDB;
+  API -> OpenLibrary; OpenLibrary -> Cache;
+  API -> Recomendador; Recomendador -> Catalogo;
+  CatalogoDB -> Datos; CSV -> Datos; Datos -> Reportes;
 }

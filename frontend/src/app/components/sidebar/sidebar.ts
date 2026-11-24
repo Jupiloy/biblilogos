@@ -1,4 +1,4 @@
-import { Component, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-sidebar',
@@ -7,6 +7,7 @@ import { Component, output } from '@angular/core';
   styleUrl: './sidebar.css',
 })
 export class Sidebar {
+  readonly role = input<'admin' | 'lector'>('lector');
   readonly collapsedChange = output<boolean>();
   readonly navigationChange = output<
     'buscar' | 'explorar' | 'guardados' | 'catalogo'

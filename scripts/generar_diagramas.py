@@ -69,23 +69,33 @@ def crear_drawio(nombre, titulo, nodos, conexiones):
 def main():
     arquitectura = """
 digraph G {
-  rankdir=LR; graph [bgcolor="white"]; node [shape=box, style="rounded,filled", fillcolor="#DAE8FC", fontname="Arial"];
+  rankdir=LR; graph [bgcolor="white", ranksep="0.55", nodesep="0.35"]; node [shape=box, style="rounded,filled", fillcolor="#DAE8FC", fontname="Arial", fontsize=11];
   Usuario [label="Usuario"];
   Consola [label="main.py\\nMenú consola"];
   GUI [label="interfaz_grafica.py\\nTkinter"];
   Angular [label="Angular 20\\nInterfaz web"];
   API [label="FastAPI\\nEndpoints REST"];
-  Funcional [label="motor_funcional.py"];
-  Logico [label="motor_logico.py"];
-  POO [label="modelos.py\\nPOO y CRUD"];
+  Auth [label="ServicioAutenticacion\\nroles y sesiones"];
+  UsuariosDB [shape=cylinder, label="SQLite\\nusuarios.db"];
+  Catalogo [label="ServicioCatalogo"];
+  CatalogoDB [shape=cylinder, label="SQLite\\ncatalogo.db"];
+  OpenLibrary [label="ServicioOpenLibrary"];
+  Recomendador [label="ServicioRecomendaciones"];
+  Cache [shape=cylinder, label="SQLite\\nbibliologos.db"];
+  Funcional [label="motor_funcional.py\\nfilter/map/reduce"];
+  Logico [label="motor_logico.py\\ninferencia simulada"];
+  POO [label="modelos.py\\nclases y repositorio"];
   Datos [label="analisis_datos.py\\nPandas + NumPy"];
   CSV [shape=cylinder, label="CSV de prueba"];
-  Cache [shape=cylinder, label="SQLite caché"];
+  Reportes [shape=folder, label="Reportes CSV"];
   Usuario -> Consola; Usuario -> GUI; Usuario -> Angular;
   Consola -> Funcional; Consola -> Logico; Consola -> POO;
   Angular -> API;
-  API -> POO; API -> Logico; API -> Datos;
-  Datos -> CSV; API -> Cache;
+  API -> Auth; Auth -> UsuariosDB;
+  API -> Catalogo; Catalogo -> POO; Catalogo -> CatalogoDB;
+  API -> OpenLibrary; OpenLibrary -> Cache;
+  API -> Recomendador; Recomendador -> Catalogo;
+  CatalogoDB -> Datos; CSV -> Datos; Datos -> Reportes;
 }
 """
     render_dot("arquitectura_general", arquitectura)
@@ -169,18 +179,26 @@ digraph G {
         "arquitectura_general",
         "Arquitectura general",
         [
-            ("Usuario", 20, 180), ("Consola", 220, 40),
-            ("Tkinter", 220, 180), ("Angular", 220, 320),
-            ("FastAPI", 430, 320), ("POO / CRUD", 640, 40),
-            ("Motor funcional", 640, 180), ("Motor lógico", 640, 320),
-            ("Pandas + NumPy", 640, 460), ("Reportes CSV", 850, 460),
+            ("Usuario", 20, 180), ("Consola", 180, 20),
+            ("Tkinter", 180, 100), ("Angular", 180, 180),
+            ("FastAPI", 370, 180), ("Autenticación", 580, 40),
+            ("Usuarios SQLite", 790, 40), ("Catálogo", 580, 140),
+            ("Catálogo SQLite", 790, 140), ("Open Library", 580, 240),
+            ("Caché SQLite", 790, 240), ("Recomendador", 580, 340),
+            ("Motor funcional", 370, 320), ("Motor lógico", 370, 400),
+            ("POO / modelos", 580, 430), ("Análisis datos", 20, 360),
+            ("CSV de prueba", 180, 360), ("Reportes CSV", 180, 440),
         ],
         [
             ("Usuario", "Consola"), ("Usuario", "Tkinter"), ("Usuario", "Angular"),
-            ("Consola", "POO / CRUD"), ("Consola", "Motor funcional"),
+            ("Consola", "POO / modelos"), ("Consola", "Motor funcional"),
             ("Consola", "Motor lógico"), ("Angular", "FastAPI"),
-            ("FastAPI", "POO / CRUD"), ("FastAPI", "Motor lógico"),
-            ("FastAPI", "Pandas + NumPy"), ("Pandas + NumPy", "Reportes CSV"),
+            ("FastAPI", "Autenticación"), ("Autenticación", "Usuarios SQLite"),
+            ("FastAPI", "Catálogo"), ("Catálogo", "Catálogo SQLite"),
+            ("Catálogo", "POO / modelos"), ("FastAPI", "Open Library"),
+            ("Open Library", "Caché SQLite"), ("FastAPI", "Recomendador"),
+            ("Recomendador", "Catálogo"), ("Catálogo SQLite", "Análisis datos"),
+            ("CSV de prueba", "Análisis datos"), ("Análisis datos", "Reportes CSV"),
         ],
     )
 

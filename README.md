@@ -37,12 +37,17 @@ La nueva interfaz web utiliza Angular 20 para el frontend y FastAPI para el back
    uv pip install --python .venv/bin/python fastapi uvicorn
    ```
 
-2. Inicia la API:
+2. Crea la cuenta administradora inicial (el comando solicita la contraseña sin mostrarla):
+   ```bash
+   ./.venv/bin/python -m backend.create_admin
+   ```
+
+3. Inicia la API:
    ```bash
    uv run --python .venv/bin/python uvicorn backend.main:app --reload --port 8000
    ```
 
-3. En otra terminal, inicia Angular:
+4. En otra terminal, inicia Angular:
    ```bash
    cd frontend
    npm install
@@ -50,6 +55,11 @@ La nueva interfaz web utiliza Angular 20 para el frontend y FastAPI para el back
    ```
 
 Abre `http://localhost:4200`. La API estará disponible en `http://localhost:8000/api`.
+Los lectores pueden crear su propia cuenta desde la pantalla de acceso. El rol
+administrador se crea localmente y es el único que puede crear, editar o eliminar
+publicaciones. Los lectores pueden buscar, consultar y recibir recomendaciones.
+Las contraseñas se almacenan con PBKDF2 y las sesiones expiran después de ocho horas.
+Las cuentas y sesiones se guardan en `data/usuarios.db`.
 
 ## Catálogo abierto
 
@@ -76,15 +86,17 @@ Ejecuta las pruebas Python:
 ./.venv/bin/python -m unittest discover -s tests -v
 ```
 
-Genera los reportes NumPy/Pandas:
+Genera indicadores y reportes NumPy/Pandas a partir del catálogo actual de
+`data/catalogo.db`:
 
 ```bash
-./.venv/bin/python - <<'PY'
-from analisis_datos import cargar_catalogo, exportar_reportes
-df = cargar_catalogo("tests/fixtures/catalogo_pruebas.csv")
-print(exportar_reportes(df, "entregables/reportes"))
-PY
+./.venv/bin/python -m analisis_datos
 ```
+
+El análisis abre SQLite en modo de solo lectura y vuelve a consultar sus datos
+cada vez que se ejecuta. Los reportes se escriben en `entregables/reportes/`.
+`tests/fixtures/catalogo_pruebas.csv` se conserva como conjunto fijo y pequeño
+para que las pruebas automatizadas sean reproducibles.
 
 ## Entregables académicos
 
@@ -94,7 +106,7 @@ Los archivos finales se encuentran en `entregables/`:
 
 - `Informe_Tecnico_BiblioLogos.docx`: informe editable en Word.
 - `pdf/Informe_Tecnico_BiblioLogos.pdf`: informe exportado a PDF.
-- `Presentacion_BiblioLogos.pptx`: presentación breve de 9 diapositivas, preparada para un máximo de 10 minutos e incluye capturas puntuales de la interfaz y del código.
+- `Presentacion_BiblioLogos.pptx`: presentación explicativa de 15 diapositivas, preparada para 9:30 minutos e incluye capturas de la interfaz, el código y diagramas.
 - `EVIDENCIAS.md`: guía de evidencias y comandos.
 - `reportes/`: reportes CSV generados con Pandas y NumPy.
 
